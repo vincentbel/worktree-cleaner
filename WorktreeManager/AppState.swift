@@ -19,6 +19,7 @@ final class AppState {
   var removingWorktreeID: GitWorktree.ID?
   var errorMessage: String?
   var successMessage: String?
+  var transientMessage: String?
 
   private let workspace: GitWorkspace
   private let defaults: UserDefaults
@@ -26,6 +27,7 @@ final class AppState {
   private var activeScanID: UUID?
   private var activeSnapshotLoadID: UUID?
   private var diskUsageTask: Task<Void, Never>?
+  private var transientMessageTask: Task<Void, Never>?
 
   init(
     workspace: GitWorkspace = GitWorkspace(),
@@ -54,6 +56,7 @@ final class AppState {
     activeScanID = nil
     activeSnapshotLoadID = nil
     diskUsageTask?.cancel()
+    transientMessageTask?.cancel()
     repositories = []
     selectedRepositoryID = nil
     snapshot = nil
@@ -61,6 +64,7 @@ final class AppState {
     sharedGitAllocatedBytes = nil
     isLoadingSnapshot = false
     isMeasuringDiskUsage = false
+    transientMessage = nil
     await scan()
   }
 
@@ -147,6 +151,7 @@ final class AppState {
       guard activeSnapshotLoadID == loadID,
         selectedRepositoryID == repository.id
       else { return }
+      updateRepository(loadedSnapshot.repository)
       snapshot = loadedSnapshot
       startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
     } catch {
@@ -182,6 +187,7 @@ final class AppState {
       guard activeSnapshotLoadID == loadID,
         selectedRepositoryID == repository.id
       else { return }
+      updateRepository(loadedSnapshot.repository)
       snapshot = loadedSnapshot
       worktreeAllocatedBytes = [:]
       sharedGitAllocatedBytes = nil
@@ -196,6 +202,27 @@ final class AppState {
       guard activeSnapshotLoadID == loadID else { return }
       errorMessage = error.localizedDescription
     }
+  }
+
+  func showTransientMessage(_ message: String) {
+    transientMessageTask?.cancel()
+    transientMessage = message
+    transientMessageTask = Task {
+      do {
+        try await Task.sleep(for: .seconds(1.5))
+      } catch {
+        return
+      }
+      guard transientMessage == message else { return }
+      transientMessage = nil
+    }
+  }
+
+  private func updateRepository(_ repository: GitRepository) {
+    guard let index = repositories.firstIndex(where: { $0.id == repository.id }) else {
+      return
+    }
+    repositories[index] = repository
   }
 
   private func startMeasuringDiskUsage(

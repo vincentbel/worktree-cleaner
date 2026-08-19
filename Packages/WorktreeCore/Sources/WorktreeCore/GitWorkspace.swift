@@ -33,8 +33,13 @@ public struct GitWorkspace: Sendable {
       repository: repository,
       cleanupTarget: cleanupTarget
     )
+    let refreshedRepository = GitRepository(
+      workingTreeURL: repository.workingTreeURL,
+      commonGitDirectoryURL: repository.commonGitDirectoryURL,
+      linkedWorktreeCount: max(0, worktrees.count - 1)
+    )
     return RepositorySnapshot(
-      repository: repository,
+      repository: refreshedRepository,
       worktrees: worktrees
     )
   }
@@ -199,10 +204,12 @@ public struct GitWorkspace: Sendable {
       ["rev-parse", "--path-format=absolute", "--git-common-dir"],
       in: candidate
     )
+    let worktreeCount = fields.count { $0.hasPrefix("worktree ") }
 
     return GitRepository(
       workingTreeURL: canonicalURL(URL(filePath: String(workingTree))),
-      commonGitDirectoryURL: canonicalURL(URL(filePath: commonGitDirectory))
+      commonGitDirectoryURL: canonicalURL(URL(filePath: commonGitDirectory)),
+      linkedWorktreeCount: max(0, worktreeCount - 1)
     )
   }
 

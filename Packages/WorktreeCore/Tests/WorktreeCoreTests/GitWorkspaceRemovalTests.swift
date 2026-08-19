@@ -24,6 +24,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
 
     XCTAssertEqual(updatedSnapshot.worktrees.count, 1)
     XCTAssertTrue(updatedSnapshot.worktrees[0].isMain)
+    XCTAssertEqual(updatedSnapshot.repository.linkedWorktreeCount, 0)
   }
 
   func testRemoveRepeatsPreflightAndRefusesNewUntrackedFile() async throws {

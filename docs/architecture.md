@@ -52,7 +52,9 @@ alone. A validated logical repository is emitted immediately; the app updates
 the sidebar without waiting for the rest of the selected directory to finish.
 
 - `git worktree list --porcelain -z` identifies the main working-tree root and
-  validates that the candidate belongs to a registered worktree set.
+  validates that the candidate belongs to a registered worktree set. The same
+  output supplies the number of extra linked worktrees shown in the sidebar, so
+  discovery does not run status checks for every repository.
 - `git rev-parse --git-common-dir` identifies the shared repository metadata.
 - The normalized common Git directory is the logical repository identity. This
   prevents a linked worktree from appearing as a second project in the sidebar.
@@ -144,6 +146,10 @@ rule, not a safety rule, and can be revisited after real usage data exists.
 The primary window uses a two-column `NavigationSplitView`:
 
 - Sidebar: discovered logical repositories and their aggregate health.
+- Repositories with extra linked worktrees appear first and show the extra
+  worktree count. Repositories with only their main working tree appear in a
+  muted section at the bottom. A refreshed snapshot updates this grouping after
+  removal without requiring a rescan.
 - Detail: a native table of worktrees with branch, path, status, disk usage,
   recommendation, and actions.
 - Worktree data can scroll horizontally, while a narrow trailing action column
@@ -152,6 +158,9 @@ The primary window uses a two-column `NavigationSplitView`:
   applications. Detection checks system, `/Applications`, and the user's
   `Applications` directory; opening uses native `NSWorkspace` and application
   icons come from the installed app bundles.
+- Copying a path reports completion with a short, non-blocking toast. Destructive
+  operation results continue to use explicit feedback because they warrant more
+  attention.
 - Toolbar: choose root, rescan, and later refresh remote refs explicitly.
 
 Long-running scans and inspections are asynchronous, cancellable, and never run

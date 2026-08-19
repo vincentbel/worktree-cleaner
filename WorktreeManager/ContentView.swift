@@ -9,9 +9,28 @@ struct ContentView: View {
 
   var body: some View {
     NavigationSplitView {
-      List(model.repositories, selection: repositorySelection) { repository in
-        RepositoryRow(repository: repository)
-          .tag(repository.id)
+      List(selection: repositorySelection) {
+        if !repositoriesWithLinkedWorktrees.isEmpty {
+          Section {
+            ForEach(repositoriesWithLinkedWorktrees) { repository in
+              RepositoryRow(repository: repository)
+                .tag(repository.id)
+            }
+          } header: {
+            Text("有额外 Worktree · \(repositoriesWithLinkedWorktrees.count) 个项目")
+          }
+        }
+
+        if !repositoriesWithoutLinkedWorktrees.isEmpty {
+          Section {
+            ForEach(repositoriesWithoutLinkedWorktrees) { repository in
+              RepositoryRow(repository: repository)
+                .tag(repository.id)
+            }
+          } header: {
+            Text("只有主工作区 · \(repositoriesWithoutLinkedWorktrees.count) 个项目")
+          }
+        }
       }
       .navigationTitle("项目")
       .overlay {
@@ -113,6 +132,28 @@ struct ContentView: View {
     .task {
       await model.restoreSelectedDirectory()
     }
+    .overlay(alignment: .bottom) {
+      if let transientMessage = model.transientMessage {
+        Label(transientMessage, systemImage: "checkmark.circle.fill")
+          .font(.callout)
+          .padding(.horizontal, 14)
+          .padding(.vertical, 8)
+          .background(.regularMaterial, in: Capsule())
+          .shadow(color: .black.opacity(0.15), radius: 8, y: 3)
+          .padding(.bottom, 18)
+          .allowsHitTesting(false)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.easeOut(duration: 0.18), value: model.transientMessage)
+  }
+
+  private var repositoriesWithLinkedWorktrees: [GitRepository] {
+    model.repositories.filter { $0.linkedWorktreeCount > 0 }
+  }
+
+  private var repositoriesWithoutLinkedWorktrees: [GitRepository] {
+    model.repositories.filter { $0.linkedWorktreeCount == 0 }
   }
 
   private var repositorySelection: Binding<GitRepository.ID?> {
@@ -147,7 +188,7 @@ struct ContentView: View {
         worktreeAllocatedBytes: model.worktreeAllocatedBytes,
         sharedGitAllocatedBytes: model.sharedGitAllocatedBytes,
         removingWorktreeID: model.removingWorktreeID,
-        onMessage: { model.successMessage = $0 },
+        onMessage: { model.showTransientMessage($0) },
         onError: { model.errorMessage = $0 },
         onRemove: { pendingRemoval = $0 }
       )
@@ -200,15 +241,34 @@ private struct RepositoryRow: View {
   let repository: GitRepository
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 3) {
-      Text(repository.name)
-        .fontWeight(.medium)
-      Text(repository.workingTreeURL.path)
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
+    HStack(alignment: .top, spacing: 8) {
+      VStack(alignment: .leading, spacing: 3) {
+        Text(repository.name)
+          .fontWeight(.medium)
+        Text(repository.workingTreeURL.path)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+      }
+
+      Spacer(minLength: 4)
+
+      if repository.linkedWorktreeCount > 0 {
+        Label(
+          "\(repository.linkedWorktreeCount)",
+          systemImage: "square.stack.3d.up.fill"
+        )
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.tint)
+        .help("\(repository.linkedWorktreeCount) 个额外 worktree")
+      } else {
+        Text("无额外")
+          .font(.caption2)
+          .foregroundStyle(.tertiary)
+      }
     }
     .padding(.vertical, 3)
+    .opacity(repository.linkedWorktreeCount == 0 ? 0.58 : 1)
   }
 }
 
@@ -456,7 +516,7 @@ private struct PathActionMenu: View {
     Menu {
       Button {
         service.copyPath(path)
-        onMessage("已复制路径：\(path.path)")
+        onMessage("路径已复制")
       } label: {
         Label("复制路径", systemImage: "doc.on.doc")
       }

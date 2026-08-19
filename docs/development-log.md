@@ -69,3 +69,11 @@ instead.
   require a stronger warning; main, dirty, locked, missing, and unknown-target
   cases remain blocked. Removal shows an in-row progress indicator, returns a
   fresh snapshot, and reports success or failure to the user.
+- Repository discovery now derives each project's extra linked-worktree count
+  from the `git worktree list` output it already fetched. The sidebar groups
+  projects with extra worktrees first, shows that count, and moves muted
+  main-only projects to the bottom without adding per-project status commands.
+  A refreshed post-removal snapshot updates the grouping immediately.
+- Path copying now uses a non-blocking 1.5-second toast instead of an alert that
+  requires another click. The sidebar grouping and muted styling were verified
+  in the running native app.

@@ -61,6 +61,17 @@ final class GitWorkspaceDiscoveryTests: XCTestCase {
     )
   }
 
+  func testDiscoverReportsNumberOfLinkedWorktrees() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+
+    let repositories = try await collectRepositories(
+      from: GitWorkspace().discover(in: fixture.base)
+    )
+
+    XCTAssertEqual(repositories.first?.linkedWorktreeCount, 1)
+  }
+
   func testDiscoverContinuesIntoProjectSubdirectoriesButSkipsGeneratedDirectories()
     async throws
   {
