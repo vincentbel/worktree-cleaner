@@ -127,7 +127,11 @@ offer this override.
 
 Removal uses `git worktree remove <absolute-path>` without `--force`. The first
 version never deletes the associated branch as a side effect. Missing/prunable
-administrative records are handled separately from worktree removal.
+administrative records are handled separately with `git worktree prune
+--expire now`. Pruning requires an explicit confirmation, repeats inspection as
+a preflight, rejects a restored or locked target record, and may remove every
+stale unlocked registration in that repository. It never deletes branches or
+existing worktree files.
 
 This policy is intentionally conservative:
 

@@ -43,6 +43,11 @@
 "removal.confirm.message" = "Git will delete this directory. This cannot be undone, but the branch will not be deleted. Git status will be checked again before deletion.\n\n%@";
 "success.removed_branch" = "Deleted %@. Branch %@ was kept.";
 "success.removed_detached" = "Deleted %@. The worktree had a detached HEAD.";
+"success.pruned_registrations" = "Removed all stale worktree registrations in this repository. Branches and existing files were not changed.";
+
+"prune.confirm.title" = "Clean Up Stale Worktree Registrations?";
+"prune.confirm.button" = "Clean Up Registrations";
+"prune.confirm.message" = "This directory no longer exists and only its Git worktree registration remains:\n\n%@\n\nGit will remove all stale, unlocked worktree registrations in this repository. This does not delete branches or any files that still exist.";
 
 "table.shared_git_data" = "Shared Git data %@";
 "table.calculating_shared_git" = "Calculating shared Git data…";
@@ -59,6 +64,8 @@
 "action.delete" = "Delete";
 "action.delete.unmerged_help" = "Delete this unmerged worktree";
 "action.delete.help" = "Delete this worktree";
+"action.prune_registration" = "Clean Up Registration";
+"action.prune_registration.help" = "Remove stale Git worktree registrations; branches and existing files are kept";
 "action.path_copied" = "Path copied";
 "action.copy_path" = "Copy Path";
 "action.open_with" = "Open with %@";
@@ -68,13 +75,14 @@
 "action.recalculate_disk_usage" = "Recalculate Disk Usage";
 
 "disk.large_help" = "Uses more than 5 GB; consider reviewing it";
-"status.missing_path" = "Path missing";
+"status.missing_path" = "Directory no longer exists";
 "status.locked" = "Locked";
 "status.clean" = "Clean";
 "status.unavailable" = "Status unavailable";
 
 "recommendation.keep_main" = "Keep main worktree";
-"recommendation.missing_path" = "Path missing; prune registration";
+"recommendation.missing_path" = "Only a stale Git registration remains; safe to clean up";
+"recommendation.missing_path_locked" = "Directory is gone, but its Git registration is locked";
 "recommendation.uncommitted" = "Has uncommitted changes";
 "recommendation.locked_reason" = "Locked: %@";
 "recommendation.blocked" = "Cannot clean up";

@@ -35,6 +35,10 @@ instead.
   originally caused the entire repository snapshot to fail. Inspection now asks
   Git to evaluate records with `--expire now`, preserves the missing worktree as
   a prunable record, and skips status and disk traversal for the absent path.
+- Missing worktree rows explain that only stale Git metadata remains and expose
+  a dedicated registration-cleanup action. The operation rechecks the selected
+  record, rejects restored or locked entries, runs `git worktree prune --expire
+  now`, preserves branches and existing files, then refreshes the snapshot.
 - Added single-worktree removal. The public operation refreshes the snapshot as
   a final preflight, accepts only a current `cleanable` recommendation, invokes
   `git worktree remove` without force, preserves the branch, and returns a fresh

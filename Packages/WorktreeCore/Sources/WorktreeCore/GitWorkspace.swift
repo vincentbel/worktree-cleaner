@@ -100,6 +100,26 @@ public struct GitWorkspace: Sendable {
     return try await snapshot(of: repository)
   }
 
+  public func prune(
+    _ worktree: GitWorktree,
+    from repository: GitRepository
+  ) async throws -> RepositorySnapshot {
+    let currentSnapshot = try await snapshot(of: repository)
+    guard let currentWorktree = currentSnapshot.worktrees.first(where: { $0.id == worktree.id })
+    else {
+      throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
+    }
+    guard currentWorktree.isPrunable, !currentWorktree.isLocked else {
+      throw GitWorkspaceError.worktreeRegistrationNotPrunable(currentWorktree.path)
+    }
+
+    _ = try GitCommandRunner().runData(
+      ["worktree", "prune", "--expire", "now"],
+      in: repository.workingTreeURL
+    )
+    return try await snapshot(of: repository)
+  }
+
   private func discoverRepositories(
     in baseDirectory: URL,
     yield: (GitRepository) -> Void
@@ -409,6 +429,7 @@ public enum GitWorkspaceError: Error, Equatable {
   case cannotMeasureDiskUsage(URL)
   case worktreeNotRegistered(URL)
   case worktreeNotCleanable(URL, CleanupRecommendation)
+  case worktreeRegistrationNotPrunable(URL)
 }
 
 extension GitWorkspaceError: LocalizedError {
@@ -426,6 +447,8 @@ extension GitWorkspaceError: LocalizedError {
       CoreL10n.format("error.worktree_not_registered", url.path)
     case .worktreeNotCleanable(let url, _):
       CoreL10n.format("error.worktree_not_cleanable", url.path)
+    case .worktreeRegistrationNotPrunable(let url):
+      CoreL10n.format("error.worktree_registration_not_prunable", url.path)
     }
   }
 }

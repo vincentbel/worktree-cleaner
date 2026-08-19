@@ -7,6 +7,7 @@ struct ContentView: View {
   @State private var isChoosingDirectory = false
   @State private var isManagingDirectories = false
   @State private var pendingRemoval: GitWorktree?
+  @State private var pendingPrune: GitWorktree?
 
   var body: some View {
     NavigationSplitView {
@@ -205,6 +206,24 @@ struct ContentView: View {
     } message: { worktree in
       Text(removalMessage(for: worktree))
     }
+    .alert(
+      L10n.string("prune.confirm.title"),
+      isPresented: Binding(
+        get: { pendingPrune != nil },
+        set: { if !$0 { pendingPrune = nil } }
+      ),
+      presenting: pendingPrune
+    ) { worktree in
+      Button(L10n.string("prune.confirm.button")) {
+        pendingPrune = nil
+        Task { await model.prune(worktree) }
+      }
+      Button(L10n.string("common.cancel"), role: .cancel) {
+        pendingPrune = nil
+      }
+    } message: { worktree in
+      Text(L10n.format("prune.confirm.message", worktree.path.path))
+    }
     .task {
       await model.restoreSelectedDirectory()
     }
@@ -279,7 +298,8 @@ struct ContentView: View {
         onRecalculateDiskUsage: { model.recalculateDiskUsage() },
         onMessage: { model.showTransientMessage($0) },
         onError: { model.errorMessage = $0 },
-        onRemove: { pendingRemoval = $0 }
+        onRemove: { pendingRemoval = $0 },
+        onPrune: { pendingPrune = $0 }
       )
     } else if model.isScanning || model.isLoadingSnapshot {
       ProgressView(L10n.string("detail.loading_git_status"))
@@ -522,6 +542,7 @@ private struct WorktreeTable: View {
   let onMessage: (String) -> Void
   let onError: (String) -> Void
   let onRemove: (GitWorktree) -> Void
+  let onPrune: (GitWorktree) -> Void
 
   var body: some View {
     VStack(spacing: 0) {
@@ -616,7 +637,8 @@ private struct WorktreeTable: View {
                   isRemovalInProgress: removingWorktreeID != nil,
                   onMessage: onMessage,
                   onError: onError,
-                  onRemove: onRemove
+                  onRemove: onRemove,
+                  onPrune: onPrune
                 )
                 .background(rowBackground(at: index))
                 .overlay(alignment: .bottom) { Divider() }
@@ -744,6 +766,7 @@ private struct WorktreeActionRow: View {
   let onMessage: (String) -> Void
   let onError: (String) -> Void
   let onRemove: (GitWorktree) -> Void
+  let onPrune: (GitWorktree) -> Void
 
   var body: some View {
     HStack(spacing: 8) {
@@ -757,6 +780,17 @@ private struct WorktreeActionRow: View {
         ProgressView()
           .controlSize(.small)
           .frame(width: 24, height: 24)
+      } else if worktree.isPrunable, !worktree.isLocked {
+        Button {
+          onPrune(worktree)
+        } label: {
+          WorktreeActionIcon(systemName: "eraser", pointSize: 14)
+            .foregroundStyle(.primary)
+        }
+        .buttonStyle(.plain)
+        .disabled(isRemovalInProgress)
+        .help(L10n.string("action.prune_registration.help"))
+        .accessibilityLabel(L10n.string("action.prune_registration"))
       } else if worktree.cleanupRecommendation.removalKind != nil {
         Button {
           onRemove(worktree)
@@ -953,6 +987,11 @@ private struct RecommendationLabel: View {
     if reasons.contains(where: {
       if case .missing = $0 { true } else { false }
     }) {
+      if reasons.contains(where: {
+        if case .locked = $0 { true } else { false }
+      }) {
+        return L10n.string("recommendation.missing_path_locked")
+      }
       return L10n.string("recommendation.missing_path")
     }
     if reasons.contains(.uncommittedChanges) {

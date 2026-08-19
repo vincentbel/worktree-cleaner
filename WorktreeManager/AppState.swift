@@ -451,6 +451,49 @@ final class AppState {
     }
   }
 
+  func prune(_ worktree: GitWorktree) async {
+    guard let repository = snapshot?.repository,
+      removingWorktreeID == nil
+    else { return }
+
+    let loadID = UUID()
+    activeSnapshotLoadID = loadID
+    diskUsageTask?.cancel()
+    isMeasuringDiskUsage = false
+    isLoadingSnapshot = true
+    removingWorktreeID = worktree.id
+    errorMessage = nil
+    successMessage = nil
+    defer {
+      if activeSnapshotLoadID == loadID {
+        isLoadingSnapshot = false
+      }
+      if removingWorktreeID == worktree.id {
+        removingWorktreeID = nil
+      }
+    }
+
+    do {
+      let loadedSnapshot = try await workspace.prune(worktree, from: repository)
+      guard activeSnapshotLoadID == loadID,
+        selectedRepositoryID == repository.id
+      else { return }
+      updateRepository(loadedSnapshot.repository)
+      snapshotsByRepositoryID[repository.id] = loadedSnapshot
+      snapshot = loadedSnapshot
+      diskUsageCache[repository.id] = nil
+      worktreeAllocatedBytes = [:]
+      sharedGitAllocatedBytes = nil
+      diskUsageMeasuredAt = nil
+      persistWorkspaceCache()
+      startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
+      successMessage = L10n.string("success.pruned_registrations")
+    } catch {
+      guard activeSnapshotLoadID == loadID else { return }
+      errorMessage = error.localizedDescription
+    }
+  }
+
   func showTransientMessage(_ message: String) {
     transientMessageTask?.cancel()
     transientMessage = message

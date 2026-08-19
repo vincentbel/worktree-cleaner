@@ -43,6 +43,11 @@
 "removal.confirm.message" = "将通过 Git 删除这个目录。此操作不可撤销，但不会删除分支。执行前会再次检查 Git 状态。\n\n%@";
 "success.removed_branch" = "已删除 %@，分支 %@ 仍然保留。";
 "success.removed_detached" = "已删除 %@。原 worktree 为 Detached HEAD。";
+"success.pruned_registrations" = "已清理当前仓库内所有失效的 worktree 登记，分支和现存文件均未改动。";
+
+"prune.confirm.title" = "清理失效的 worktree 登记？";
+"prune.confirm.button" = "清理登记";
+"prune.confirm.message" = "该目录已经不存在，只剩 Git worktree 登记：\n\n%@\n\nGit 将清理当前仓库内所有已失效且未锁定的 worktree 登记，不会删除分支，也不会改动任何仍然存在的文件。";
 
 "table.shared_git_data" = "共享 Git 数据 %@";
 "table.calculating_shared_git" = "正在计算共享 Git 数据…";
@@ -59,6 +64,8 @@
 "action.delete" = "删除";
 "action.delete.unmerged_help" = "删除这个尚未合入的 worktree";
 "action.delete.help" = "删除这个 worktree";
+"action.prune_registration" = "清理登记";
+"action.prune_registration.help" = "清理失效的 Git worktree 登记；不会删除分支或现存文件";
 "action.path_copied" = "路径已复制";
 "action.copy_path" = "复制路径";
 "action.open_with" = "使用 %@ 打开";
@@ -68,13 +75,14 @@
 "action.recalculate_disk_usage" = "重新计算磁盘占用";
 
 "disk.large_help" = "占用超过 5 GB，建议检查";
-"status.missing_path" = "路径缺失";
+"status.missing_path" = "目录已不存在";
 "status.locked" = "已锁定";
 "status.clean" = "干净";
 "status.unavailable" = "状态不可用";
 
 "recommendation.keep_main" = "保留主工作区";
-"recommendation.missing_path" = "路径缺失，需清理登记";
+"recommendation.missing_path" = "仅残留 Git 登记，可安全清理";
+"recommendation.missing_path_locked" = "目录已不存在，但 Git 登记处于锁定状态";
 "recommendation.uncommitted" = "有未提交修改";
 "recommendation.locked_reason" = "已锁定：%@";
 "recommendation.blocked" = "不可清理";

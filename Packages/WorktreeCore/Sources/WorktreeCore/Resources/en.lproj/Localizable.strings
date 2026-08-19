@@ -4,4 +4,5 @@
 "error.cannot_measure_disk_usage" = "Disk usage cannot be measured for: %@";
 "error.worktree_not_registered" = "The worktree is no longer registered: %@";
 "error.worktree_not_cleanable" = "The worktree no longer passes cleanup checks: %@";
+"error.worktree_registration_not_prunable" = "The worktree registration is no longer eligible for cleanup: %@";
 "error.git_command_failed" = "%@ failed in %@ with status %d: %@";
