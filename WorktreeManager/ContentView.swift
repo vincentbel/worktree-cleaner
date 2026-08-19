@@ -8,10 +8,8 @@ struct ContentView: View {
   @State private var pendingRemoval: GitWorktree?
 
   var body: some View {
-    @Bindable var model = model
-
     NavigationSplitView {
-      List(model.repositories, selection: $model.selectedRepositoryID) { repository in
+      List(model.repositories, selection: repositorySelection) { repository in
         RepositoryRow(repository: repository)
           .tag(repository.id)
       }
@@ -105,9 +103,17 @@ struct ContentView: View {
     .task {
       await model.restoreSelectedDirectory()
     }
-    .onChange(of: model.selectedRepositoryID) {
-      Task { await model.loadSelectedRepository() }
-    }
+  }
+
+  private var repositorySelection: Binding<GitRepository.ID?> {
+    Binding(
+      get: { model.selectedRepositoryID },
+      set: { repositoryID in
+        guard model.selectedRepositoryID != repositoryID else { return }
+        model.selectedRepositoryID = repositoryID
+        Task { await model.loadSelectedRepository() }
+      }
+    )
   }
 
   @ViewBuilder
