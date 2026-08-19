@@ -4,6 +4,21 @@ import XCTest
 @testable import WorktreeCore
 
 final class DiskUsageCacheEntryTests: XCTestCase {
+  func testTotalAllocatedBytesIncludesWorktreesAndSharedGitData() {
+    let snapshot = makeSnapshot()
+    let entry = DiskUsageCacheEntry(
+      repositoryID: snapshot.repository.id,
+      measuredAt: Date(),
+      worktreeAllocatedBytes: [
+        snapshot.worktrees[0].path: 1_024,
+        snapshot.worktrees[1].path: 2_048,
+      ],
+      sharedGitAllocatedBytes: 4_096
+    )
+
+    XCTAssertEqual(entry.totalAllocatedBytes, 7_168)
+  }
+
   func testEntryIsReusableForSevenDaysWhenEveryCurrentWorktreeWasMeasured() {
     let snapshot = makeSnapshot()
     let now = Date(timeIntervalSince1970: 1_800_000_000)

@@ -5,6 +5,7 @@
 "sidebar.empty.title" = "没有找到 Git 项目";
 "sidebar.empty.description" = "请选择其他目录范围，或确认其中包含 Git 仓库。";
 "sidebar.no_extra" = "无额外";
+"sidebar.total_size_help" = "已计算的总占用（含共享 Git 数据）：%@";
 "toolbar.add_directory" = "添加目录";
 "toolbar.refresh" = "刷新";
 "toolbar.refresh_current_scope" = "刷新当前目录范围";

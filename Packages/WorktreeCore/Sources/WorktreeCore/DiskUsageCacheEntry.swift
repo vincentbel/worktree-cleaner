@@ -8,6 +8,10 @@ public struct DiskUsageCacheEntry: Codable, Equatable, Sendable {
   public let worktreeAllocatedBytes: [URL: Int64]
   public let sharedGitAllocatedBytes: Int64
 
+  public var totalAllocatedBytes: Int64 {
+    worktreeAllocatedBytes.values.reduce(sharedGitAllocatedBytes, +)
+  }
+
   public init(
     repositoryID: GitRepository.ID,
     measuredAt: Date,

@@ -178,6 +178,12 @@ final class AppState {
     rootScanErrors[rootID]
   }
 
+  func measuredTotalAllocatedBytes(
+    for repositoryID: GitRepository.ID
+  ) -> Int64? {
+    diskUsageCache[repositoryID]?.totalAllocatedBytes
+  }
+
   private func scanRoot(_ rootID: URL) async -> Bool {
     let scanID = UUID()
     activeRootScanIDs[rootID] = scanID

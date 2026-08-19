@@ -47,8 +47,13 @@ struct ContentView: View {
           if !repositoriesWithLinkedWorktrees.isEmpty {
             Section {
               ForEach(repositoriesWithLinkedWorktrees) { repository in
-                RepositoryRow(repository: repository)
-                  .tag(repository.id)
+                RepositoryRow(
+                  repository: repository,
+                  measuredTotalAllocatedBytes: model.measuredTotalAllocatedBytes(
+                    for: repository.id
+                  )
+                )
+                .tag(repository.id)
               }
             } header: {
               Text(
@@ -63,8 +68,13 @@ struct ContentView: View {
           if !repositoriesWithoutLinkedWorktrees.isEmpty {
             Section {
               ForEach(repositoriesWithoutLinkedWorktrees) { repository in
-                RepositoryRow(repository: repository)
-                  .tag(repository.id)
+                RepositoryRow(
+                  repository: repository,
+                  measuredTotalAllocatedBytes: model.measuredTotalAllocatedBytes(
+                    for: repository.id
+                  )
+                )
+                .tag(repository.id)
               }
             } header: {
               Text(
@@ -439,6 +449,7 @@ private struct DirectoryManagerView: View {
 
 private struct RepositoryRow: View {
   let repository: GitRepository
+  let measuredTotalAllocatedBytes: Int64?
 
   var body: some View {
     HStack(alignment: .top, spacing: 8) {
@@ -453,24 +464,33 @@ private struct RepositoryRow: View {
 
       Spacer(minLength: 4)
 
-      if repository.linkedWorktreeCount > 0 {
-        Label(
-          "\(repository.linkedWorktreeCount)",
-          systemImage: "square.stack.3d.up.fill"
-        )
-        .font(.caption.monospacedDigit())
-        .foregroundStyle(.primary)
-        .help(
-          L10n.plural(
-            "sidebar.extra_count_help",
-            count: repository.linkedWorktreeCount
+      VStack(alignment: .trailing, spacing: 3) {
+        if repository.linkedWorktreeCount > 0 {
+          Label(
+            "\(repository.linkedWorktreeCount)",
+            systemImage: "square.stack.3d.up.fill"
           )
-        )
-      } else {
-        Text(L10n.string("sidebar.no_extra"))
-          .font(.caption2)
-          .foregroundStyle(.tertiary)
+          .help(
+            L10n.plural(
+              "sidebar.extra_count_help",
+              count: repository.linkedWorktreeCount
+            )
+          )
+        } else {
+          Text(L10n.string("sidebar.no_extra"))
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+        }
+
+        if let measuredTotalAllocatedBytes {
+          let size = formattedBytes(measuredTotalAllocatedBytes)
+          Label(size, systemImage: "internaldrive")
+            .help(L10n.format("sidebar.total_size_help", size))
+        }
       }
+      .font(.caption.monospacedDigit())
+      .foregroundStyle(.primary)
+      .lineLimit(1)
     }
     .padding(.vertical, 3)
     .opacity(repository.linkedWorktreeCount == 0 ? 0.58 : 1)

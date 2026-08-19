@@ -112,3 +112,8 @@ instead.
   and disk measurements. Existing `baseDirectoryPath` and `workspaceCache.v1`
   values migrate on first launch so the previous project list can still render
   immediately before background reconciliation.
+- Repository rows now reuse complete disk-usage cache entries to show total
+  measured size beside the linked-worktree count. The total includes every
+  worktree directory (including the main worktree) and shared Git data, and
+  stays hidden until a full measurement finishes so progressive measurements
+  are not mistaken for a final total.

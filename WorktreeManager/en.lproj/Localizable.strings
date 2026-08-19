@@ -5,6 +5,7 @@
 "sidebar.empty.title" = "No Git projects found";
 "sidebar.empty.description" = "Choose another directory scope, or make sure it contains Git repositories.";
 "sidebar.no_extra" = "No extras";
+"sidebar.total_size_help" = "Measured total size including shared Git data: %@";
 "toolbar.add_directory" = "Add Directory";
 "toolbar.refresh" = "Refresh";
 "toolbar.refresh_current_scope" = "Refresh the current directory scope";

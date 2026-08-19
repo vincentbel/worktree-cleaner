@@ -170,7 +170,9 @@ The primary window uses a two-column `NavigationSplitView`:
 - Repositories with extra linked worktrees appear first and show the extra
   worktree count. Repositories with only their main working tree appear in a
   muted section at the bottom. A refreshed snapshot updates this grouping after
-  removal without requiring a rescan.
+  removal without requiring a rescan. When a complete disk measurement is
+  cached, each repository row also shows total allocated bytes across all
+  worktree directories (including the main worktree) and shared Git data.
 - Detail: a native table of worktrees with branch, path, status, disk usage,
   recommendation, and actions.
 - Worktree data can scroll horizontally, while a narrow trailing action column
