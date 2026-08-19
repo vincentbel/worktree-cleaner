@@ -6,7 +6,6 @@ import WorktreeCore
 @Observable
 final class AppState {
   private static let baseDirectoryPathsKey = "baseDirectoryPaths"
-  private static let legacyBaseDirectoryKey = "baseDirectoryPath"
 
   var workspaceRoots = WorkspaceRoots()
   var selectedRootID: URL?
@@ -259,14 +258,7 @@ final class AppState {
   }
 
   private func restoreWorkspaceRoots() {
-    let paths: [String]
-    if let storedPaths = defaults.stringArray(forKey: Self.baseDirectoryPathsKey) {
-      paths = storedPaths
-    } else if let legacyPath = defaults.string(forKey: Self.legacyBaseDirectoryKey) {
-      paths = [legacyPath]
-    } else {
-      paths = []
-    }
+    let paths = defaults.stringArray(forKey: Self.baseDirectoryPathsKey) ?? []
 
     var restoredRoots = WorkspaceRoots()
     for path in paths {
@@ -287,7 +279,6 @@ final class AppState {
       workspaceRoots.urls.map(\.path),
       forKey: Self.baseDirectoryPathsKey
     )
-    defaults.removeObject(forKey: Self.legacyBaseDirectoryKey)
   }
 
   private func ensureValidSelection() -> Bool {

@@ -197,12 +197,11 @@ The primary window uses a two-column `NavigationSplitView`:
 
 The sidebar restores its cached repository list, root associations, scope, and
 last selection immediately, then reconciles each root with a progressive
-background scan. The former single-root defaults and cache records migrate to
-the multi-root format on first load. Adding a root scans only that root; removing
-one drops only its associations and orphaned cached projects. Worktree snapshots
-are cached only in memory so revisiting a project can show its previous state
-while Git status refreshes. Disk measurement progress stays in the detail area
-and is not treated as a blocking window-level load.
+background scan. Adding a root scans only that root; removing one drops only its
+associations and orphaned cached projects. Worktree snapshots are cached only in
+memory so revisiting a project can show its previous state while Git status
+refreshes. Disk measurement progress stays in the detail area and is not treated
+as a blocking window-level load.
 
 Long-running scans and inspections are asynchronous, cancellable, and never run
 on the main actor.

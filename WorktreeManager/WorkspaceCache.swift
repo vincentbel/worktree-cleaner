@@ -10,16 +10,8 @@ struct WorkspaceCache: Codable, Sendable {
   let diskUsageEntries: [DiskUsageCacheEntry]
 }
 
-private struct LegacyWorkspaceCache: Codable, Sendable {
-  let baseDirectoryURL: URL
-  let repositories: [GitRepository]
-  let selectedRepositoryID: GitRepository.ID?
-  let diskUsageEntries: [DiskUsageCacheEntry]
-}
-
 struct WorkspaceCacheStore {
-  private static let key = "workspaceCache.v2"
-  private static let legacyKey = "workspaceCache.v1"
+  private static let key = "workspaceCache"
 
   private let defaults: UserDefaults
   private let logger = Logger(
@@ -42,45 +34,14 @@ struct WorkspaceCacheStore {
       }
     }
 
-    return loadLegacyCache(configuredRootURLs: configuredRootURLs)
+    return nil
   }
 
   func save(_ cache: WorkspaceCache) {
     do {
       defaults.set(try JSONEncoder().encode(cache), forKey: Self.key)
-      defaults.removeObject(forKey: Self.legacyKey)
     } catch {
       logger.error("Could not encode workspace cache: \(error.localizedDescription)")
-    }
-  }
-
-  func remove() {
-    defaults.removeObject(forKey: Self.key)
-    defaults.removeObject(forKey: Self.legacyKey)
-  }
-
-  private func loadLegacyCache(configuredRootURLs: [URL]) -> WorkspaceCache? {
-    guard let data = defaults.data(forKey: Self.legacyKey) else { return nil }
-    do {
-      let legacyCache = try JSONDecoder().decode(LegacyWorkspaceCache.self, from: data)
-      let rootURL = WorkspaceRoots.normalize(legacyCache.baseDirectoryURL)
-      guard configuredRootURLs.contains(rootURL) else { return nil }
-
-      let cache = WorkspaceCache(
-        repositories: legacyCache.repositories,
-        associations: legacyCache.repositories.map {
-          RepositoryRootAssociation(repositoryID: $0.id, rootIDs: [rootURL])
-        },
-        selectedRootID: nil,
-        selectedRepositoryID: legacyCache.selectedRepositoryID,
-        diskUsageEntries: legacyCache.diskUsageEntries
-      ).filtered(to: configuredRootURLs)
-      save(cache)
-      return cache
-    } catch {
-      logger.error("Could not decode legacy workspace cache: \(error.localizedDescription)")
-      defaults.removeObject(forKey: Self.legacyKey)
-      return nil
     }
   }
 }

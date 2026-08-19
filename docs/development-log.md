@@ -121,10 +121,10 @@ instead.
   that current scope. Root scans publish progressively with at most two roots
   active at once. A directory manager exposes project counts, scan progress and
   per-root errors; removing a root changes only app configuration and cache.
-- `workspaceCache.v2` persists multiple roots, associations, scope, selection,
-  and disk measurements. Existing `baseDirectoryPath` and `workspaceCache.v1`
-  values migrate on first launch so the previous project list can still render
-  immediately before background reconciliation.
+- `workspaceCache` persists multiple roots, associations, scope, selection, and
+  disk measurements. The app is not released yet, so obsolete single-root keys
+  and cache-schema migration code were removed instead of becoming permanent
+  compatibility surface.
 - Repository rows now reuse complete disk-usage cache entries to show total
   measured size beside the linked-worktree count. The total includes every
   worktree directory (including the main worktree) and shared Git data, and
