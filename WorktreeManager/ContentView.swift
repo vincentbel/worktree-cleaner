@@ -339,9 +339,13 @@ private struct WorktreeTable: View {
           .lineLimit(1)
         }
         Button(action: onRecalculateDiskUsage) {
-          Image(systemName: "arrow.clockwise")
+          Label(
+            L10n.string("action.recalculate_disk_usage.short"),
+            systemImage: "arrow.clockwise"
+          )
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
         .disabled(isDiskUsageRefreshDisabled)
         .help(L10n.string("action.recalculate_disk_usage"))
       }
@@ -642,13 +646,20 @@ private struct DiskUsageLabel: View {
 
   var body: some View {
     if let allocatedBytes {
-      Text(formattedBytes(allocatedBytes))
-        .foregroundStyle(
-          allocatedBytes >= Self.largeWorktreeThreshold ? Color.orange : Color.secondary
-        )
-        .help(
-          allocatedBytes >= Self.largeWorktreeThreshold ? L10n.string("disk.large_help") : ""
-        )
+      HStack(spacing: 6) {
+        Text(formattedBytes(allocatedBytes))
+          .foregroundStyle(
+            allocatedBytes >= Self.largeWorktreeThreshold ? Color.orange : Color.secondary
+          )
+          .help(
+            allocatedBytes >= Self.largeWorktreeThreshold ? L10n.string("disk.large_help") : ""
+          )
+        if isMeasuring {
+          ProgressView()
+            .controlSize(.small)
+            .accessibilityLabel(L10n.string("table.calculating_disk_usage"))
+        }
+      }
     } else if isMeasuring {
       ProgressView()
         .controlSize(.small)

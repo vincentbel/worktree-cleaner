@@ -50,6 +50,7 @@
 "action.open_with" = "使用 %@ 打开";
 "action.path_menu.help" = "复制路径或选择打开方式";
 "action.path_menu.label" = "路径操作";
+"action.recalculate_disk_usage.short" = "重新计算";
 "action.recalculate_disk_usage" = "重新计算磁盘占用";
 
 "disk.large_help" = "占用超过 5 GB，建议检查";

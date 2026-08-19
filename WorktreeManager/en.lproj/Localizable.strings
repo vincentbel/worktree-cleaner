@@ -50,6 +50,7 @@
 "action.open_with" = "Open with %@";
 "action.path_menu.help" = "Copy the path or choose how to open it";
 "action.path_menu.label" = "Path Actions";
+"action.recalculate_disk_usage.short" = "Recalculate";
 "action.recalculate_disk_usage" = "Recalculate Disk Usage";
 
 "disk.large_help" = "Uses more than 5 GB; consider reviewing it";
