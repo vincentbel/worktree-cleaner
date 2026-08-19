@@ -6,6 +6,8 @@
 "sidebar.empty.description" = "Choose another directory scope, or make sure it contains Git repositories.";
 "sidebar.no_extra" = "No extras";
 "sidebar.total_size_help" = "Measured total size including shared Git data: %@";
+"sidebar.rescan" = "Rescan Directory Scope";
+"sidebar.rescan_help" = "Rescan the selected directory scope for Git projects";
 "toolbar.add_directory" = "Add Directory";
 "toolbar.refresh" = "Refresh";
 "toolbar.refresh_selected_project" = "Refresh the selected project's worktree status and recommendations";
@@ -28,8 +30,6 @@
 "directory_manager.empty.description" = "Add a directory to discover Git projects inside it.";
 "directory_manager.scanning" = "Scanning…";
 "directory_manager.scan_failed" = "Scan failed";
-"directory_manager.rescan" = "Rescan";
-"directory_manager.rescan_help" = "Rescan this directory for Git projects";
 "directory_manager.remove" = "Remove";
 "directory_manager.remove_help" = "Remove this directory from Worktree Manager without changing files on disk";
 "error.directory_duplicate" = "This directory is already included: %@";

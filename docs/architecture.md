@@ -190,9 +190,10 @@ The primary window uses a two-column `NavigationSplitView`:
   attention.
 - Toolbar: refresh the selected project's worktree status and recommendations;
   disk measurement remains a separate detail action. Base-directory addition
-  stays in the sidebar, while the directory manager shows every configured
-  path, project count, scan progress or error, supports rescanning one root,
-  and removes configuration without changing Git repositories or files on disk.
+  and recursive rescanning stay beside the sidebar scope picker, so scanning
+  follows either the selected root or the all-roots scope. The directory manager
+  shows every configured path, project count, scan progress or error, and
+  removes configuration without changing Git repositories or files on disk.
 
 The sidebar restores its cached repository list, root associations, scope, and
 last selection immediately, then reconciles each root with a progressive

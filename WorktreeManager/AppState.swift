@@ -161,9 +161,9 @@ final class AppState {
     }
   }
 
-  func scanDirectory(_ url: URL) async {
-    let rootID = WorkspaceRoots.normalize(url)
-    await scanRoots([rootID], refreshSelectedRepository: false)
+  func scanSelectedScope() async {
+    let rootURLs = selectedRootID.map { [$0] } ?? workspaceRoots.urls
+    await scanRoots(rootURLs, refreshSelectedRepository: false)
   }
 
   func repositoryCount(under rootID: URL) -> Int {

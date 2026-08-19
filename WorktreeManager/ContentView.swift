@@ -32,6 +32,14 @@ struct ContentView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .disabled(model.workspaceRoots.urls.isEmpty)
 
+          Button(L10n.string("sidebar.rescan"), systemImage: "arrow.clockwise") {
+            Task { await model.scanSelectedScope() }
+          }
+          .labelStyle(.iconOnly)
+          .buttonStyle(.borderless)
+          .disabled(model.workspaceRoots.urls.isEmpty || model.isScanningCurrentScope)
+          .help(L10n.string("sidebar.rescan_help"))
+
           Button(L10n.string("toolbar.add_directory"), systemImage: "plus") {
             isChoosingDirectory = true
           }
@@ -420,17 +428,6 @@ private struct DirectoryManagerView: View {
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
             .frame(minWidth: 72, alignment: .trailing)
-
-            Button(
-              L10n.string("directory_manager.rescan"),
-              systemImage: "arrow.clockwise"
-            ) {
-              Task { await model.scanDirectory(rootURL) }
-            }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
-            .disabled(model.isScanning(rootURL))
-            .help(L10n.string("directory_manager.rescan_help"))
 
             Button(
               L10n.string("directory_manager.remove"),
