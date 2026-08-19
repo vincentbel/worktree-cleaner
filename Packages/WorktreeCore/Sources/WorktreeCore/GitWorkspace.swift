@@ -415,17 +415,17 @@ extension GitWorkspaceError: LocalizedError {
   public var errorDescription: String? {
     switch self {
     case .notDirectory(let url):
-      "The selected path is not a directory: \(url.path)"
+      CoreL10n.format("error.not_directory", url.path)
     case .cannotEnumerate(let url):
-      "The selected directory cannot be scanned: \(url.path)"
+      CoreL10n.format("error.cannot_enumerate", url.path)
     case .invalidWorktreeList(let url):
-      "Git returned an invalid worktree list for: \(url.path)"
+      CoreL10n.format("error.invalid_worktree_list", url.path)
     case .cannotMeasureDiskUsage(let url):
-      "Disk usage cannot be measured for: \(url.path)"
+      CoreL10n.format("error.cannot_measure_disk_usage", url.path)
     case .worktreeNotRegistered(let url):
-      "The worktree is no longer registered: \(url.path)"
+      CoreL10n.format("error.worktree_not_registered", url.path)
     case .worktreeNotCleanable(let url, _):
-      "The worktree no longer passes cleanup checks: \(url.path)"
+      CoreL10n.format("error.worktree_not_cleanable", url.path)
     }
   }
 }
@@ -475,8 +475,13 @@ private struct GitCommandError: LocalizedError {
   var errorDescription: String? {
     let command = (["git"] + arguments).joined(separator: " ")
     let details = standardError.trimmingCharacters(in: .whitespacesAndNewlines)
-    return "\(command) failed in \(directory.path) with status "
-      + "\(terminationStatus): \(details)"
+    return CoreL10n.format(
+      "error.git_command_failed",
+      command,
+      directory.path,
+      terminationStatus,
+      details
+    )
   }
 }
 

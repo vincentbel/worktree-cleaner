@@ -166,6 +166,20 @@ The primary window uses a two-column `NavigationSplitView`:
 Long-running scans and inspections are asynchronous, cancellable, and never run
 on the main actor.
 
+## Localization
+
+- The app supports English and Simplified Chinese (`zh-Hans`) through native
+  bundle localization. It follows the user's macOS language order and does not
+  maintain a separate in-app language preference.
+- English is the Xcode development region and therefore the fallback when the
+  preferred system language is not supported.
+- User-facing app strings use semantic keys in `Localizable.strings`; count-based
+  text uses `Localizable.stringsdict` so each language follows its own plural
+  rules.
+- `WorktreeCore` owns localized descriptions for its public errors in SwiftPM
+  resources. This keeps domain errors localized without coupling the package to
+  the application bundle.
+
 ## Verification
 
 - `swift test` verifies `WorktreeCore` through its public seam using temporary

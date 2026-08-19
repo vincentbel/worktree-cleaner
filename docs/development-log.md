@@ -82,3 +82,11 @@ instead.
   handles and persisted width state; switching to SwiftUI `Table` would work
   against the fixed-action-column requirement. The Worktree column currently
   defaults to 260 points.
+- Added native English and Simplified Chinese localization. The app follows the
+  system language, uses English as the development-region fallback, and keeps
+  `WorktreeCore` error resources in the package's own bundle.
+- Localization must cover computed labels, destructive confirmations, operation
+  results, and errors in addition to static SwiftUI text. Count-based labels use
+  strings dictionaries for correct English singular forms. Because the app
+  target defaults to `MainActor`, bundle lookup helpers used by nonisolated
+  `LocalizedError` requirements must also be explicitly `nonisolated`.

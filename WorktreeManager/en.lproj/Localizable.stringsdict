@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>sidebar.section.with_linked</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>Linked worktrees · %#@projects@</string>
+    <key>projects</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>%d project</string>
+      <key>other</key>
+      <string>%d projects</string>
+    </dict>
+  </dict>
+  <key>sidebar.section.main_only</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>Main worktree only · %#@projects@</string>
+    <key>projects</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>%d project</string>
+      <key>other</key>
+      <string>%d projects</string>
+    </dict>
+  </dict>
+  <key>sidebar.extra_count_help</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@worktrees@</string>
+    <key>worktrees</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>%d extra worktree</string>
+      <key>other</key>
+      <string>%d extra worktrees</string>
+    </dict>
+  </dict>
+  <key>table.worktree_count</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@worktrees@</string>
+    <key>worktrees</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>%d worktree</string>
+      <key>other</key>
+      <string>%d worktrees</string>
+    </dict>
+  </dict>
+  <key>status.change_count</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@changes@</string>
+    <key>changes</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>%d change</string>
+      <key>other</key>
+      <string>%d changes</string>
+    </dict>
+  </dict>
+</dict>
+</plist>

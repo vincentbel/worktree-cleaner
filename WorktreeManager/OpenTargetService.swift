@@ -139,9 +139,15 @@ struct OpenTargetService {
     else { return nil }
     let icon = NSWorkspace.shared.icon(forFile: applicationURL.path)
     icon.size = NSSize(width: 20, height: 20)
+    let label =
+      switch definition.id {
+      case "finder": L10n.string("open_target.finder")
+      case "terminal": L10n.string("open_target.terminal")
+      default: definition.label
+      }
     return OpenTarget(
       id: definition.id,
-      label: definition.label,
+      label: label,
       icon: icon,
       action: definition.isFinder ? .finder : .application(applicationURL)
     )
@@ -155,9 +161,9 @@ private enum OpenTargetError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .cannotOpen(let url, let target):
-      "无法使用 \(target) 打开：\(url.path)"
+      L10n.format("error.cannot_open_target", url.path, target)
     case .missingPath(let url):
-      "要打开的路径不存在：\(url.path)"
+      L10n.format("error.open_path_missing", url.path)
     }
   }
 }

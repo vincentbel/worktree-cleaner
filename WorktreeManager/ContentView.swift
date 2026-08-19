@@ -17,7 +17,12 @@ struct ContentView: View {
                 .tag(repository.id)
             }
           } header: {
-            Text("有额外 Worktree · \(repositoriesWithLinkedWorktrees.count) 个项目")
+            Text(
+              L10n.plural(
+                "sidebar.section.with_linked",
+                count: repositoriesWithLinkedWorktrees.count
+              )
+            )
           }
         }
 
@@ -28,19 +33,24 @@ struct ContentView: View {
                 .tag(repository.id)
             }
           } header: {
-            Text("只有主工作区 · \(repositoriesWithoutLinkedWorktrees.count) 个项目")
+            Text(
+              L10n.plural(
+                "sidebar.section.main_only",
+                count: repositoriesWithoutLinkedWorktrees.count
+              )
+            )
           }
         }
       }
-      .navigationTitle("项目")
+      .navigationTitle(L10n.string("sidebar.title"))
       .overlay {
         if model.repositories.isEmpty, model.isScanning {
-          ProgressView("正在扫描 Git 项目…")
+          ProgressView(L10n.string("sidebar.scanning"))
         } else if model.repositories.isEmpty, model.baseDirectoryURL != nil {
           ContentUnavailableView(
-            "没有找到 Git 项目",
+            L10n.string("sidebar.empty.title"),
             systemImage: "folder.badge.questionmark",
-            description: Text("请选择其他基础目录，或确认目录中包含 Git 仓库。")
+            description: Text(L10n.string("sidebar.empty.description"))
           )
         }
       }
@@ -66,11 +76,11 @@ struct ContentView: View {
             .controlSize(.small)
         }
 
-        Button("选择目录", systemImage: "folder.badge.plus") {
+        Button(L10n.string("toolbar.choose_directory"), systemImage: "folder.badge.plus") {
           isChoosingDirectory = true
         }
 
-        Button("刷新", systemImage: "arrow.clockwise") {
+        Button(L10n.string("toolbar.refresh"), systemImage: "arrow.clockwise") {
           Task { await model.scan() }
         }
         .disabled(model.baseDirectoryURL == nil || model.isScanning)
@@ -90,26 +100,26 @@ struct ContentView: View {
       Task { await model.chooseDirectory(url) }
     }
     .alert(
-      "操作失败",
+      L10n.string("alert.operation_failed"),
       isPresented: Binding(
         get: { model.errorMessage != nil },
         set: { if !$0 { model.errorMessage = nil } }
       )
     ) {
-      Button("好", role: .cancel) {}
+      Button(L10n.string("common.ok"), role: .cancel) {}
     } message: {
-      Text(model.errorMessage ?? "未知错误")
+      Text(model.errorMessage ?? L10n.string("error.unknown"))
     }
     .alert(
-      "操作完成",
+      L10n.string("alert.operation_completed"),
       isPresented: Binding(
         get: { model.successMessage != nil },
         set: { if !$0 { model.successMessage = nil } }
       )
     ) {
-      Button("好", role: .cancel) {}
+      Button(L10n.string("common.ok"), role: .cancel) {}
     } message: {
-      Text(model.successMessage ?? "操作已完成。")
+      Text(model.successMessage ?? L10n.string("success.operation_completed"))
     }
     .alert(
       removalTitle,
@@ -123,7 +133,7 @@ struct ContentView: View {
         pendingRemoval = nil
         Task { await model.remove(worktree) }
       }
-      Button("取消", role: .cancel) {
+      Button(L10n.string("common.cancel"), role: .cancel) {
         pendingRemoval = nil
       }
     } message: { worktree in
@@ -171,11 +181,11 @@ struct ContentView: View {
   private var detail: some View {
     if model.baseDirectoryURL == nil {
       ContentUnavailableView {
-        Label("选择基础目录", systemImage: "folder.badge.plus")
+        Label(L10n.string("empty.choose_base_directory"), systemImage: "folder.badge.plus")
       } description: {
-        Text("Worktree Manager 会递归发现其中的 Git 项目。")
+        Text(L10n.string("empty.choose_base_description"))
       } actions: {
-        Button("选择目录") {
+        Button(L10n.string("toolbar.choose_directory")) {
           isChoosingDirectory = true
         }
         .buttonStyle(.borderedProminent)
@@ -193,31 +203,31 @@ struct ContentView: View {
         onRemove: { pendingRemoval = $0 }
       )
     } else if model.isScanning || model.isLoadingSnapshot {
-      ProgressView("正在读取 Git 状态…")
+      ProgressView(L10n.string("detail.loading_git_status"))
     } else {
       ContentUnavailableView(
-        "选择一个项目",
+        L10n.string("detail.select_project"),
         systemImage: "point.3.connected.trianglepath.dotted"
       )
     }
   }
 
   private var removalTitle: String {
-    guard let pendingRemoval else { return "确认删除这个 worktree？" }
+    guard let pendingRemoval else { return L10n.string("removal.confirm.title") }
     switch pendingRemoval.cleanupRecommendation.removalKind {
     case .unmerged(let target):
-      return "尚未合入 \(target)，仍要删除？"
+      return L10n.format("removal.unmerged.title", target)
     default:
-      return "确认删除这个 worktree？"
+      return L10n.string("removal.confirm.title")
     }
   }
 
   private func removalButtonTitle(for worktree: GitWorktree) -> String {
     switch worktree.cleanupRecommendation.removalKind {
     case .unmerged:
-      "仍然删除未合入的 worktree"
+      L10n.string("removal.unmerged.button")
     default:
-      "永久删除 worktree"
+      L10n.string("removal.permanent.button")
     }
   }
 
@@ -226,13 +236,16 @@ struct ContentView: View {
     case .unmerged(let target):
       let recoveryMessage =
         worktree.branch.map {
-          "Git 分支 \($0) 会保留。"
-        } ?? "当前为 Detached HEAD；删除后提交可能难以找回，请先记录提交 \(worktree.head)。"
-      return
-        "这个 worktree 的提交尚未合入 \(target)。目录删除后无法撤销。\(recoveryMessage)执行前会再次检查工作区是否干净。\n\n\(worktree.path.path)"
+          L10n.format("removal.branch_preserved", $0)
+        } ?? L10n.format("removal.detached_warning", worktree.head)
+      return L10n.format(
+        "removal.unmerged.message",
+        target,
+        recoveryMessage,
+        worktree.path.path
+      )
     default:
-      return
-        "将通过 Git 删除这个目录。此操作不可撤销，但不会删除分支。执行前会再次检查 Git 状态。\n\n\(worktree.path.path)"
+      return L10n.format("removal.confirm.message", worktree.path.path)
     }
   }
 }
@@ -260,9 +273,14 @@ private struct RepositoryRow: View {
         )
         .font(.caption.monospacedDigit())
         .foregroundStyle(.primary)
-        .help("\(repository.linkedWorktreeCount) 个额外 worktree")
+        .help(
+          L10n.plural(
+            "sidebar.extra_count_help",
+            count: repository.linkedWorktreeCount
+          )
+        )
       } else {
-        Text("无额外")
+        Text(L10n.string("sidebar.no_extra"))
           .font(.caption2)
           .foregroundStyle(.tertiary)
       }
@@ -284,16 +302,16 @@ private struct WorktreeTable: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Text("\(snapshot.worktrees.count) 个 worktree")
+        Text(L10n.plural("table.worktree_count", count: snapshot.worktrees.count))
         Spacer()
         if let sharedGitAllocatedBytes {
           Label(
-            "共享 Git 数据 \(formattedBytes(sharedGitAllocatedBytes))",
+            L10n.format("table.shared_git_data", formattedBytes(sharedGitAllocatedBytes)),
             systemImage: "externaldrive"
           )
           .foregroundStyle(.secondary)
         } else {
-          Label("正在计算共享 Git 数据…", systemImage: "externaldrive")
+          Label(L10n.string("table.calculating_shared_git"), systemImage: "externaldrive")
             .foregroundStyle(.secondary)
         }
       }
@@ -329,7 +347,7 @@ private struct WorktreeTable: View {
             Divider()
 
             VStack(spacing: 0) {
-              Text("操作")
+              Text(L10n.string("column.actions"))
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundStyle(.secondary)
@@ -384,11 +402,17 @@ private enum WorktreeGridMetrics {
 private struct WorktreeGridHeader: View {
   var body: some View {
     HStack(spacing: 0) {
-      GridCell(width: WorktreeGridMetrics.worktreeWidth) { Text("Worktree") }
-      GridCell(width: WorktreeGridMetrics.statusWidth) { Text("状态") }
-      GridCell(width: WorktreeGridMetrics.diskWidth) { Text("占用空间") }
-      GridCell(width: WorktreeGridMetrics.recommendationWidth) { Text("建议") }
-      GridCell(width: WorktreeGridMetrics.pathWidth) { Text("路径") }
+      GridCell(width: WorktreeGridMetrics.worktreeWidth) {
+        Text(L10n.string("column.worktree"))
+      }
+      GridCell(width: WorktreeGridMetrics.statusWidth) { Text(L10n.string("column.status")) }
+      GridCell(width: WorktreeGridMetrics.diskWidth) {
+        Text(L10n.string("column.disk_usage"))
+      }
+      GridCell(width: WorktreeGridMetrics.recommendationWidth) {
+        Text(L10n.string("column.recommendation"))
+      }
+      GridCell(width: WorktreeGridMetrics.pathWidth) { Text(L10n.string("column.path")) }
     }
     .font(.caption)
     .fontWeight(.medium)
@@ -410,7 +434,7 @@ private struct WorktreeGridRow: View {
             .fontWeight(.medium)
             .lineLimit(1)
           if worktree.isMain {
-            Text("主工作区")
+            Text(L10n.string("worktree.main"))
               .font(.caption)
               .foregroundStyle(.secondary)
           }
@@ -488,7 +512,7 @@ private struct WorktreeActionRow: View {
         .buttonStyle(.plain)
         .disabled(isRemovalInProgress)
         .help(removalHelp)
-        .accessibilityLabel("删除")
+        .accessibilityLabel(L10n.string("action.delete"))
       } else {
         Color.clear.frame(width: 24, height: 24)
       }
@@ -501,9 +525,9 @@ private struct WorktreeActionRow: View {
 
   private var removalHelp: String {
     if case .unmerged = worktree.cleanupRecommendation.removalKind {
-      "删除这个尚未合入的 worktree"
+      L10n.string("action.delete.unmerged_help")
     } else {
-      "删除这个 worktree"
+      L10n.string("action.delete.help")
     }
   }
 
@@ -527,9 +551,9 @@ private struct PathActionMenu: View {
     Menu {
       Button {
         service.copyPath(path)
-        onMessage("路径已复制")
+        onMessage(L10n.string("action.path_copied"))
       } label: {
-        Label("复制路径", systemImage: "doc.on.doc")
+        Label(L10n.string("action.copy_path"), systemImage: "doc.on.doc")
       }
 
       Divider()
@@ -545,7 +569,7 @@ private struct PathActionMenu: View {
           }
         } label: {
           Label {
-            Text("使用 \(target.label) 打开")
+            Text(L10n.format("action.open_with", target.label))
           } icon: {
             Image(nsImage: target.icon)
           }
@@ -558,8 +582,8 @@ private struct PathActionMenu: View {
     .menuStyle(.borderlessButton)
     .menuIndicator(.hidden)
     .fixedSize()
-    .help("复制路径或选择打开方式")
-    .accessibilityLabel("路径操作")
+    .help(L10n.string("action.path_menu.help"))
+    .accessibilityLabel(L10n.string("action.path_menu.label"))
   }
 }
 
@@ -586,7 +610,9 @@ private struct DiskUsageLabel: View {
         .foregroundStyle(
           allocatedBytes >= Self.largeWorktreeThreshold ? Color.orange : Color.secondary
         )
-        .help(allocatedBytes >= Self.largeWorktreeThreshold ? "占用超过 5 GB，建议检查" : "")
+        .help(
+          allocatedBytes >= Self.largeWorktreeThreshold ? L10n.string("disk.large_help") : ""
+        )
     } else {
       Text("—")
         .foregroundStyle(.tertiary)
@@ -601,13 +627,13 @@ private struct StatusLabel: View {
 
   var body: some View {
     if isPrunable {
-      Label("路径缺失", systemImage: "questionmark.folder.fill")
+      Label(L10n.string("status.missing_path"), systemImage: "questionmark.folder.fill")
         .foregroundStyle(.red)
     } else if isLocked {
-      Label("已锁定", systemImage: "lock.fill")
+      Label(L10n.string("status.locked"), systemImage: "lock.fill")
         .foregroundStyle(.orange)
     } else if status?.isClean == true {
-      Label("干净", systemImage: "checkmark.circle.fill")
+      Label(L10n.string("status.clean"), systemImage: "checkmark.circle.fill")
         .foregroundStyle(.green)
     } else if status != nil {
       Label(summary, systemImage: "exclamationmark.triangle.fill")
@@ -616,13 +642,13 @@ private struct StatusLabel: View {
   }
 
   private var summary: String {
-    guard let status else { return "状态不可用" }
+    guard let status else { return L10n.string("status.unavailable") }
     let count =
       status.stagedFileCount
       + status.modifiedFileCount
       + status.untrackedFileCount
       + status.conflictedFileCount
-    return "\(count) 项变更"
+    return L10n.plural("status.change_count", count: count)
   }
 }
 
@@ -632,7 +658,7 @@ private struct RecommendationLabel: View {
   var body: some View {
     switch recommendation {
     case .protectedMainWorktree:
-      Label("保留主工作区", systemImage: "shield.fill")
+      Label(L10n.string("recommendation.keep_main"), systemImage: "shield.fill")
         .foregroundStyle(.secondary)
     case .blocked(let reasons):
       Label(blockedTitle(reasons), systemImage: "xmark.octagon.fill")
@@ -641,7 +667,7 @@ private struct RecommendationLabel: View {
       Label(reviewTitle(reason), systemImage: "questionmark.circle.fill")
         .foregroundStyle(.orange)
     case .cleanable(let target):
-      Label("已合入 \(target)，可清理", systemImage: "trash.circle.fill")
+      Label(L10n.format("recommendation.cleanable", target), systemImage: "trash.circle.fill")
         .foregroundStyle(.green)
     }
   }
@@ -650,23 +676,24 @@ private struct RecommendationLabel: View {
     if reasons.contains(where: {
       if case .missing = $0 { true } else { false }
     }) {
-      return "路径缺失，需清理登记"
+      return L10n.string("recommendation.missing_path")
     }
     if reasons.contains(.uncommittedChanges) {
-      return "有未提交修改"
+      return L10n.string("recommendation.uncommitted")
     }
     if case .locked(let reason) = reasons.first {
-      return reason.map { "已锁定：\($0)" } ?? "已锁定"
+      return reason.map { L10n.format("recommendation.locked_reason", $0) }
+        ?? L10n.string("status.locked")
     }
-    return "不可清理"
+    return L10n.string("recommendation.blocked")
   }
 
   private func reviewTitle(_ reason: CleanupReviewReason) -> String {
     switch reason {
     case .cleanupTargetUnavailable:
-      "未识别远端默认分支"
+      L10n.string("recommendation.cleanup_target_unavailable")
     case .notMerged(let target):
-      "尚未合入 \(target)"
+      L10n.format("recommendation.not_merged", target)
     }
   }
 }

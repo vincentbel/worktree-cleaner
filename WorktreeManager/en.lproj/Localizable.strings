@@ -1,0 +1,70 @@
+"sidebar.title" = "Projects";
+"sidebar.scanning" = "Scanning for Git projects…";
+"sidebar.empty.title" = "No Git projects found";
+"sidebar.empty.description" = "Choose another base directory, or make sure this directory contains Git repositories.";
+"sidebar.no_extra" = "No extras";
+
+"toolbar.choose_directory" = "Choose Directory";
+"toolbar.refresh" = "Refresh";
+
+"common.ok" = "OK";
+"common.cancel" = "Cancel";
+"alert.operation_failed" = "Operation Failed";
+"alert.operation_completed" = "Operation Completed";
+"error.unknown" = "Unknown error";
+"success.operation_completed" = "The operation completed.";
+
+"empty.choose_base_directory" = "Choose a Base Directory";
+"empty.choose_base_description" = "Worktree Manager recursively discovers Git projects inside it.";
+"detail.loading_git_status" = "Reading Git status…";
+"detail.select_project" = "Select a Project";
+
+"removal.confirm.title" = "Delete this worktree?";
+"removal.unmerged.title" = "Not merged into %@. Delete anyway?";
+"removal.unmerged.button" = "Delete Unmerged Worktree";
+"removal.permanent.button" = "Delete Worktree Permanently";
+"removal.branch_preserved" = "The Git branch %@ will be kept.";
+"removal.detached_warning" = "This worktree has a detached HEAD. Its commits may be difficult to recover after deletion; record commit %@ first.";
+"removal.unmerged.message" = "This worktree's commits have not been merged into %@. Deleting the directory cannot be undone. %@ The working tree will be checked again before deletion.\n\n%@";
+"removal.confirm.message" = "Git will delete this directory. This cannot be undone, but the branch will not be deleted. Git status will be checked again before deletion.\n\n%@";
+"success.removed_branch" = "Deleted %@. Branch %@ was kept.";
+"success.removed_detached" = "Deleted %@. The worktree had a detached HEAD.";
+
+"table.shared_git_data" = "Shared Git data %@";
+"table.calculating_shared_git" = "Calculating shared Git data…";
+"column.worktree" = "Worktree";
+"column.status" = "Status";
+"column.disk_usage" = "Disk Usage";
+"column.recommendation" = "Recommendation";
+"column.path" = "Path";
+"column.actions" = "Actions";
+"worktree.main" = "Main worktree";
+
+"action.delete" = "Delete";
+"action.delete.unmerged_help" = "Delete this unmerged worktree";
+"action.delete.help" = "Delete this worktree";
+"action.path_copied" = "Path copied";
+"action.copy_path" = "Copy Path";
+"action.open_with" = "Open with %@";
+"action.path_menu.help" = "Copy the path or choose how to open it";
+"action.path_menu.label" = "Path Actions";
+
+"disk.large_help" = "Uses more than 5 GB; consider reviewing it";
+"status.missing_path" = "Path missing";
+"status.locked" = "Locked";
+"status.clean" = "Clean";
+"status.unavailable" = "Status unavailable";
+
+"recommendation.keep_main" = "Keep main worktree";
+"recommendation.missing_path" = "Path missing; prune registration";
+"recommendation.uncommitted" = "Has uncommitted changes";
+"recommendation.locked_reason" = "Locked: %@";
+"recommendation.blocked" = "Cannot clean up";
+"recommendation.cleanup_target_unavailable" = "Remote default branch not found";
+"recommendation.not_merged" = "Not merged into %@";
+"recommendation.cleanable" = "Merged into %@; safe to clean up";
+
+"open_target.finder" = "Finder";
+"open_target.terminal" = "Terminal";
+"error.cannot_open_target" = "Could not open %1$@ with %2$@.";
+"error.open_path_missing" = "The path to open does not exist: %@";

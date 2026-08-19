@@ -193,10 +193,16 @@ final class AppState {
       sharedGitAllocatedBytes = nil
       startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
       if let branch = worktree.branch {
-        successMessage =
-          "已删除 \(worktree.path.lastPathComponent)，分支 \(branch) 仍然保留。"
+        successMessage = L10n.format(
+          "success.removed_branch",
+          worktree.path.lastPathComponent,
+          branch
+        )
       } else {
-        successMessage = "已删除 \(worktree.path.lastPathComponent)。原 worktree 为 Detached HEAD。"
+        successMessage = L10n.format(
+          "success.removed_detached",
+          worktree.path.lastPathComponent
+        )
       }
     } catch {
       guard activeSnapshotLoadID == loadID else { return }

@@ -1,0 +1,70 @@
+"sidebar.title" = "项目";
+"sidebar.scanning" = "正在扫描 Git 项目…";
+"sidebar.empty.title" = "没有找到 Git 项目";
+"sidebar.empty.description" = "请选择其他基础目录，或确认目录中包含 Git 仓库。";
+"sidebar.no_extra" = "无额外";
+
+"toolbar.choose_directory" = "选择目录";
+"toolbar.refresh" = "刷新";
+
+"common.ok" = "好";
+"common.cancel" = "取消";
+"alert.operation_failed" = "操作失败";
+"alert.operation_completed" = "操作完成";
+"error.unknown" = "未知错误";
+"success.operation_completed" = "操作已完成。";
+
+"empty.choose_base_directory" = "选择基础目录";
+"empty.choose_base_description" = "Worktree Manager 会递归发现其中的 Git 项目。";
+"detail.loading_git_status" = "正在读取 Git 状态…";
+"detail.select_project" = "选择一个项目";
+
+"removal.confirm.title" = "确认删除这个 worktree？";
+"removal.unmerged.title" = "尚未合入 %@，仍要删除？";
+"removal.unmerged.button" = "仍然删除未合入的 worktree";
+"removal.permanent.button" = "永久删除 worktree";
+"removal.branch_preserved" = "Git 分支 %@ 会保留。";
+"removal.detached_warning" = "当前为 Detached HEAD；删除后提交可能难以找回，请先记录提交 %@。";
+"removal.unmerged.message" = "这个 worktree 的提交尚未合入 %@。目录删除后无法撤销。%@执行前会再次检查工作区是否干净。\n\n%@";
+"removal.confirm.message" = "将通过 Git 删除这个目录。此操作不可撤销，但不会删除分支。执行前会再次检查 Git 状态。\n\n%@";
+"success.removed_branch" = "已删除 %@，分支 %@ 仍然保留。";
+"success.removed_detached" = "已删除 %@。原 worktree 为 Detached HEAD。";
+
+"table.shared_git_data" = "共享 Git 数据 %@";
+"table.calculating_shared_git" = "正在计算共享 Git 数据…";
+"column.worktree" = "Worktree";
+"column.status" = "状态";
+"column.disk_usage" = "占用空间";
+"column.recommendation" = "建议";
+"column.path" = "路径";
+"column.actions" = "操作";
+"worktree.main" = "主工作区";
+
+"action.delete" = "删除";
+"action.delete.unmerged_help" = "删除这个尚未合入的 worktree";
+"action.delete.help" = "删除这个 worktree";
+"action.path_copied" = "路径已复制";
+"action.copy_path" = "复制路径";
+"action.open_with" = "使用 %@ 打开";
+"action.path_menu.help" = "复制路径或选择打开方式";
+"action.path_menu.label" = "路径操作";
+
+"disk.large_help" = "占用超过 5 GB，建议检查";
+"status.missing_path" = "路径缺失";
+"status.locked" = "已锁定";
+"status.clean" = "干净";
+"status.unavailable" = "状态不可用";
+
+"recommendation.keep_main" = "保留主工作区";
+"recommendation.missing_path" = "路径缺失，需清理登记";
+"recommendation.uncommitted" = "有未提交修改";
+"recommendation.locked_reason" = "已锁定：%@";
+"recommendation.blocked" = "不可清理";
+"recommendation.cleanup_target_unavailable" = "未识别远端默认分支";
+"recommendation.not_merged" = "尚未合入 %@";
+"recommendation.cleanable" = "已合入 %@，可清理";
+
+"open_target.finder" = "访达";
+"open_target.terminal" = "终端";
+"error.cannot_open_target" = "无法使用 %2$@ 打开：%1$@";
+"error.open_path_missing" = "要打开的路径不存在：%@";

@@ -1,0 +1,7 @@
+"error.not_directory" = "所选路径不是目录：%@";
+"error.cannot_enumerate" = "无法扫描所选目录：%@";
+"error.invalid_worktree_list" = "Git 返回了无效的 worktree 列表：%@";
+"error.cannot_measure_disk_usage" = "无法计算磁盘占用：%@";
+"error.worktree_not_registered" = "该 worktree 已不在 Git 登记中：%@";
+"error.worktree_not_cleanable" = "该 worktree 已不再满足清理条件：%@";
+"error.git_command_failed" = "%@ 在 %@ 中执行失败，状态码 %d：%@";
