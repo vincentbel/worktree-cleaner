@@ -477,17 +477,19 @@ private struct WorktreeActionRow: View {
       if isRemoving {
         ProgressView()
           .controlSize(.small)
-          .frame(width: 20, height: 20)
+          .frame(width: 24, height: 24)
       } else if worktree.cleanupRecommendation.removalKind != nil {
-        Button("删除", systemImage: "trash", role: .destructive) {
+        Button {
           onRemove(worktree)
+        } label: {
+          WorktreeActionIcon(systemName: "trash")
         }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
+        .buttonStyle(.plain)
         .disabled(isRemovalInProgress)
         .help(removalHelp)
+        .accessibilityLabel("删除")
       } else {
-        Color.clear.frame(width: 20, height: 20)
+        Color.clear.frame(width: 24, height: 24)
       }
     }
     .frame(
@@ -541,13 +543,25 @@ private struct PathActionMenu: View {
         }
       }
     } label: {
-      Image(systemName: "arrow.up.forward.app")
-        .frame(width: 20, height: 20)
+      WorktreeActionIcon(systemName: "arrow.up.forward.app")
     }
     .menuStyle(.borderlessButton)
     .menuIndicator(.hidden)
     .fixedSize()
     .help("复制路径或选择打开方式")
+    .accessibilityLabel("路径操作")
+  }
+}
+
+private struct WorktreeActionIcon: View {
+  let systemName: String
+
+  var body: some View {
+    Image(systemName: systemName)
+      .font(.system(size: 15, weight: .regular))
+      .symbolRenderingMode(.monochrome)
+      .foregroundStyle(.primary)
+      .frame(width: 24, height: 24)
   }
 }
 
