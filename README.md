@@ -1,45 +1,71 @@
+<p align="center">
+  <img src="WorktreeCleaner/Assets.xcassets/AppIcon.appiconset/AppIcon-128@2x.png"
+       width="128" height="128" alt="Worktree Cleaner app icon">
+</p>
+
 # Worktree Cleaner
 
-一个使用 Swift 6 和 SwiftUI 开发的原生 macOS Git worktree 管理应用。
+Find, inspect, and safely clean up Git worktrees across all your projects.
 
-## 本地运行
+Worktree Cleaner is a native macOS app for developers who use Git worktrees for
+parallel tasks, experiments, or agent sessions. Add one or more scan directories
+and the app finds the repositories inside them, shows every registered worktree,
+measures disk usage, and helps you decide what can be removed.
 
-要求：macOS 14 或更高版本，并安装支持 Swift 6 的 Xcode。
+## Features
 
-### 使用 Xcode
+- **🔍 Recursive discovery**: Find Git repositories across multiple scan directories.
+- **🗂️ Focused project list**: Group projects with linked worktrees so cleanup
+  candidates are easy to find.
+- **🩺 Worktree health**: Inspect branch, Git status, lock state, disk usage, and
+  cleanup recommendations.
+- **🚀 Quick path actions**: Open a worktree in Finder or an installed editor or
+  terminal, or copy its path.
+- **🧹 Safe cleanup**: Remove eligible linked worktrees while preserving their Git
+  branches.
+- **🧾 Stale registration cleanup**: Clean up Git worktree registrations for
+  directories that no longer exist.
+- **💾 Efficient disk insights**: Cache disk-usage results while refreshing Git
+  status independently.
+- **🌐 Localized interface**: Use the app in English or Simplified Chinese.
+- **✨ Automatic updates**: Receive signed in-app updates through Sparkle.
 
-```bash
-cd worktree-cleaner
-open WorktreeCleaner.xcodeproj
-```
+## Safety first
 
-在 Xcode 中选择 `WorktreeCleaner` Scheme 和 `My Mac` 运行目标，然后按 `⌘R`。
-应用启动后点击“选择目录”，选择包含 Git 项目的基础目录。
+Worktree Cleaner is deliberately conservative:
 
-### 使用命令行
+- It rechecks the current Git state immediately before removing a worktree.
+- It never uses forced removal and never deletes a branch as a side effect.
+- Main, dirty, locked, and otherwise unsafe worktrees are blocked from removal.
+- Clean worktrees with unmerged commits require an explicit, stronger confirmation.
+- Recommendations are based on local Git state and should still be reviewed before
+  deletion.
 
-```bash
-cd worktree-cleaner
+## Install
 
-xcodebuild \
-  -project WorktreeCleaner.xcodeproj \
-  -scheme WorktreeCleaner \
-  -configuration Debug \
-  -derivedDataPath /tmp/worktree-cleaner-derived \
-  CODE_SIGNING_ALLOWED=NO \
-  build
+Download the latest signed and notarized build from the
+[Worktree Cleaner Releases][releases] repository.
+Unzip it, move `WorktreeCleaner.app` to your Applications folder, and open it.
+Future updates can be installed from inside the app.
 
-open /tmp/worktree-cleaner-derived/Build/Products/Debug/WorktreeCleaner.app
-```
+Worktree Cleaner requires macOS 14 or later and a Git installation available at
+`/usr/bin/git`.
 
-如果出现 `IDESimulatorFoundation` 或 `DVTDownloads` 相关错误，请先打开 Xcode
-完成首次启动组件安装。问题仍然存在时，需要更新或重装与当前 macOS 版本匹配的
-Xcode。
+## Getting started
 
-## 运行测试
+1. Select **Choose Directory** and add a directory that contains your Git projects.
+2. Choose a discovered project from the sidebar.
+3. Review its worktrees, status, disk usage, and cleanup recommendation.
+4. Use the path menu to open a worktree, or remove it when you are satisfied that
+   its work is no longer needed.
 
-```bash
-swift test --package-path Packages/WorktreeCore
-```
+Adding a scan directory does not modify its contents. Worktree Cleaner only changes
+files when you explicitly confirm a worktree removal.
 
-更多开发和验证命令参见 [docs/development.md](docs/development.md)。
+## Project documentation
+
+- [Development](docs/development.md)
+- [Architecture and safety decisions](docs/architecture.md)
+- [Release process](docs/releasing.md)
+
+[releases]: https://github.com/vincentbel/worktree-cleaner-releases/releases/latest
