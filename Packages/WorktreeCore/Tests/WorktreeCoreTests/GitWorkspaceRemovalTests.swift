@@ -72,7 +72,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     try runGit(["add", "result.txt"], in: fixture.linkedWorktree)
     try runGit(
       [
-        "-c", "user.name=Worktree Manager Tests",
+        "-c", "user.name=Worktree Cleaner Tests",
         "-c", "user.email=tests@example.com",
         "commit", "--quiet", "-m", "Unmerged agent result",
       ],

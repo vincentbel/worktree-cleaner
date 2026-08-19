@@ -8,16 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		A10000000000000000000001 /* WorktreeCore in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000002 /* WorktreeCore */; };
+		A20000000000000000000001 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A20000000000000000000002 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A10000000000000000000003 /* WorktreeManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorktreeManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000003 /* WorktreeCleaner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorktreeCleaner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A10000000000000000000004 /* WorktreeManager */ = {
+		A10000000000000000000004 /* WorktreeCleaner */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WorktreeManager;
+			path = WorktreeCleaner;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -28,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000001 /* WorktreeCore in Frameworks */,
+				A20000000000000000000001 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -37,7 +39,7 @@
 		A10000000000000000000006 = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000004 /* WorktreeManager */,
+				A10000000000000000000004 /* WorktreeCleaner */,
 				A10000000000000000000007 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -45,7 +47,7 @@
 		A10000000000000000000007 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000003 /* WorktreeManager.app */,
+				A10000000000000000000003 /* WorktreeCleaner.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -53,9 +55,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A10000000000000000000008 /* WorktreeManager */ = {
+		A10000000000000000000008 /* WorktreeCleaner */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A10000000000000000000009 /* Build configuration list for PBXNativeTarget "WorktreeManager" */;
+			buildConfigurationList = A10000000000000000000009 /* Build configuration list for PBXNativeTarget "WorktreeCleaner" */;
 			buildPhases = (
 				A1000000000000000000000A /* Sources */,
 				A10000000000000000000005 /* Frameworks */,
@@ -66,14 +68,15 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A10000000000000000000004 /* WorktreeManager */,
+				A10000000000000000000004 /* WorktreeCleaner */,
 			);
-			name = WorktreeManager;
+			name = WorktreeCleaner;
 			packageProductDependencies = (
 				A10000000000000000000002 /* WorktreeCore */,
+				A20000000000000000000002 /* Sparkle */,
 			);
-			productName = WorktreeManager;
-			productReference = A10000000000000000000003 /* WorktreeManager.app */;
+			productName = WorktreeCleaner;
+			productReference = A10000000000000000000003 /* WorktreeCleaner.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -91,7 +94,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A1000000000000000000000D /* Build configuration list for PBXProject "WorktreeManager" */;
+			buildConfigurationList = A1000000000000000000000D /* Build configuration list for PBXProject "WorktreeCleaner" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -103,13 +106,14 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A1000000000000000000000E /* XCLocalSwiftPackageReference "Packages/WorktreeCore" */,
+				A20000000000000000000003 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000007 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A10000000000000000000008 /* WorktreeManager */,
+				A10000000000000000000008 /* WorktreeCleaner */,
 			);
 		};
 /* End PBXProject section */
@@ -186,16 +190,17 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Worktree Manager";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.worktreemanager.app;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.worktreecleaner.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SPARKLE_FEED_URL = "https://raw.githubusercontent.com/vincentbel/worktree-cleaner-releases/main/appcast.xml";
+				SPARKLE_PUBLIC_ED_KEY = "QhcTQ4qXsw5wUQ4ZyCc76NgSmqWTCCJSStq1Nu7Rfqg=";
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -211,16 +216,17 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Worktree Manager";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Config/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.worktreemanager.app;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.worktreecleaner.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SPARKLE_FEED_URL = "https://raw.githubusercontent.com/vincentbel/worktree-cleaner-releases/main/appcast.xml";
+				SPARKLE_PUBLIC_ED_KEY = "QhcTQ4qXsw5wUQ4ZyCc76NgSmqWTCCJSStq1Nu7Rfqg=";
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -230,7 +236,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A10000000000000000000009 /* Build configuration list for PBXNativeTarget "WorktreeManager" */ = {
+		A10000000000000000000009 /* Build configuration list for PBXNativeTarget "WorktreeCleaner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A10000000000000000000011 /* Debug */,
@@ -239,7 +245,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A1000000000000000000000D /* Build configuration list for PBXProject "WorktreeManager" */ = {
+		A1000000000000000000000D /* Build configuration list for PBXProject "WorktreeCleaner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000000000000000000000F /* Debug */,
@@ -257,11 +263,27 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		A20000000000000000000003 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		A10000000000000000000002 /* WorktreeCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A1000000000000000000000E /* XCLocalSwiftPackageReference "Packages/WorktreeCore" */;
 			productName = WorktreeCore;
+		};
+		A20000000000000000000002 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A20000000000000000000003 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

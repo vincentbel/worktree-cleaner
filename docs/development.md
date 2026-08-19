@@ -24,17 +24,17 @@ Check formatting:
 swift format lint --recursive \
   Packages/WorktreeCore/Sources \
   Packages/WorktreeCore/Tests \
-  WorktreeManager
+  WorktreeCleaner
 ```
 
 Build the native application without requiring a signing identity:
 
 ```sh
 xcodebuild \
-  -project WorktreeManager.xcodeproj \
-  -scheme WorktreeManager \
+  -project WorktreeCleaner.xcodeproj \
+  -scheme WorktreeCleaner \
   -configuration Debug \
-  -derivedDataPath /tmp/worktree-manager-derived \
+  -derivedDataPath /tmp/worktree-cleaner-derived \
   CODE_SIGNING_ALLOWED=NO \
   build
 ```
@@ -43,8 +43,11 @@ After each completed application change, build successfully and launch that
 exact product for user verification:
 
 ```sh
-open -n /tmp/worktree-manager-derived/Build/Products/Debug/WorktreeManager.app
+open -n /tmp/worktree-cleaner-derived/Build/Products/Debug/WorktreeCleaner.app
 ```
+
+Developer ID signing, notarization, Sparkle appcast generation, and publishing
+are documented in [releasing.md](releasing.md).
 
 Tests create temporary real repositories and invoke `/usr/bin/git`. They must
 observe behavior through the public `GitWorkspace` interface rather than mock

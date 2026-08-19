@@ -1,11 +1,11 @@
-# Worktree Manager Architecture
+# Worktree Cleaner Architecture
 
 Status: Accepted  
 Last updated: 2026-08-19
 
 ## Product goal
 
-Worktree Manager is a native macOS application for discovering Git repositories
+Worktree Cleaner is a native macOS application for discovering Git repositories
 under a user-selected directory, inspecting their worktrees, and providing
 conservative cleanup recommendations. It is aimed at developers who create many
 worktrees for parallel agent tasks and need one place to understand their state
@@ -29,7 +29,10 @@ and disk usage.
 - Distribute the first version with Developer ID signing and notarization, with
   App Sandbox disabled. This allows a repository below the selected root to
   reference registered worktrees outside that root.
-- Keep third-party runtime dependencies at zero for the first version.
+- Use Sparkle 2 for direct-distribution updates. Update archives and the appcast
+  are EdDSA signed, and release builds remain Developer ID signed and notarized.
+  The private source repository is separate from a public binary-only update
+  repository so the application never embeds a shared GitHub credential.
 
 ## Module seam
 
@@ -189,11 +192,14 @@ The primary window uses a two-column `NavigationSplitView`:
   operation results continue to use explicit feedback because they warrant more
   attention.
 - Toolbar: refresh the selected project's worktree status and recommendations;
-  disk measurement remains a separate detail action. Base-directory addition
-  and recursive rescanning stay beside the sidebar scope picker, so scanning
-  follows either the selected root or the all-roots scope. The directory manager
-  shows every configured path, project count, scan progress or error, and
-  removes configuration without changing Git repositories or files on disk.
+  disk measurement remains a separate detail action. Recursive rescanning stays
+  beside the sidebar scope picker and follows either the selected root or the
+  all-roots scope. The adjacent add button remains a shortcut for choosing a new
+  base directory, while the sidebar footer opens directory settings.
+- Settings: a native tabbed settings window shares the application's single
+  `AppState`. Its directory tab adds and removes configured roots and shows each
+  root's project count, scan progress, or error. Its update tab binds directly
+  to Sparkle's automatic-check and automatic-download preferences.
 
 The sidebar restores its cached repository list, root associations, scope, and
 last selection immediately, then reconciles each root with a progressive

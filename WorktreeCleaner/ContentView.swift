@@ -3,9 +3,10 @@ import UniformTypeIdentifiers
 import WorktreeCore
 
 struct ContentView: View {
-  @State private var model = AppState()
+  let model: AppState
+
+  @Environment(\.openSettings) private var openSettings
   @State private var isChoosingDirectory = false
-  @State private var isManagingDirectories = false
   @State private var pendingRemoval: GitWorktree?
   @State private var pendingPrune: GitWorktree?
 
@@ -125,7 +126,7 @@ struct ContentView: View {
         if !model.workspaceRoots.urls.isEmpty {
           Divider()
           Button {
-            isManagingDirectories = true
+            openSettings()
           } label: {
             HStack {
               Text(
@@ -147,10 +148,10 @@ struct ContentView: View {
         }
       }
       .navigationTitle(L10n.string("sidebar.title"))
+      .navigationSplitViewColumnWidth(min: 260, ideal: 320, max: 420)
     } detail: {
       detail
     }
-    .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 380)
     .toolbar {
       ToolbarItemGroup {
         Button {
@@ -185,9 +186,6 @@ struct ContentView: View {
         return
       }
       Task { await model.addDirectory(url) }
-    }
-    .sheet(isPresented: $isManagingDirectories) {
-      DirectoryManagerView(model: model)
     }
     .alert(
       L10n.string("alert.operation_failed"),
@@ -302,7 +300,7 @@ struct ContentView: View {
       } description: {
         Text(L10n.string("empty.choose_base_description"))
       } actions: {
-        Button(L10n.string("toolbar.add_directory")) {
+        Button(L10n.string("empty.add_directory")) {
           isChoosingDirectory = true
         }
         .buttonStyle(.borderedProminent)
@@ -368,125 +366,6 @@ struct ContentView: View {
       )
     default:
       return L10n.format("removal.confirm.message", worktree.path.path)
-    }
-  }
-}
-
-private struct DirectoryManagerView: View {
-  let model: AppState
-
-  @Environment(\.dismiss) private var dismiss
-  @State private var isChoosingDirectory = false
-
-  var body: some View {
-    VStack(spacing: 0) {
-      HStack {
-        Text(L10n.string("directory_manager.title"))
-          .font(.title2.weight(.semibold))
-        Spacer()
-        Button(L10n.string("toolbar.add_directory"), systemImage: "plus") {
-          isChoosingDirectory = true
-        }
-      }
-      .padding()
-
-      Divider()
-
-      if model.workspaceRoots.urls.isEmpty {
-        ContentUnavailableView(
-          L10n.string("directory_manager.empty.title"),
-          systemImage: "folder.badge.plus",
-          description: Text(L10n.string("directory_manager.empty.description"))
-        )
-      } else {
-        List(model.workspaceRoots.urls, id: \.self) { rootURL in
-          HStack(spacing: 12) {
-            Image(systemName: "folder")
-              .font(.title3)
-              .foregroundStyle(.secondary)
-              .frame(width: 24)
-
-            VStack(alignment: .leading, spacing: 3) {
-              Text(rootURL.lastPathComponent)
-                .fontWeight(.medium)
-              Text(rootURL.path)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .textSelection(.enabled)
-                .help(rootURL.path)
-            }
-
-            Spacer(minLength: 16)
-
-            if model.isScanning(rootURL) {
-              Label {
-                Text(L10n.string("directory_manager.scanning"))
-              } icon: {
-                ProgressView()
-                  .controlSize(.small)
-              }
-              .font(.caption)
-              .foregroundStyle(.secondary)
-            } else if let error = model.scanError(for: rootURL) {
-              Label(
-                L10n.string("directory_manager.scan_failed"),
-                systemImage: "exclamationmark.triangle.fill"
-              )
-              .font(.caption)
-              .foregroundStyle(.orange)
-              .help(error)
-            }
-
-            Text(
-              L10n.plural(
-                "directory_manager.repository_count",
-                count: model.repositoryCount(under: rootURL)
-              )
-            )
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.secondary)
-            .frame(minWidth: 72, alignment: .trailing)
-
-            Button(
-              L10n.string("directory_manager.remove"),
-              systemImage: "trash",
-              role: .destructive
-            ) {
-              Task { await model.removeDirectory(rootURL) }
-            }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
-            .help(L10n.string("directory_manager.remove_help"))
-          }
-          .padding(.vertical, 5)
-        }
-      }
-
-      Divider()
-
-      HStack {
-        Spacer()
-        Button(L10n.string("common.done")) {
-          dismiss()
-        }
-        .keyboardShortcut(.defaultAction)
-      }
-      .padding()
-    }
-    .frame(minWidth: 640, minHeight: 360)
-    .fileImporter(
-      isPresented: $isChoosingDirectory,
-      allowedContentTypes: [.folder],
-      allowsMultipleSelection: false
-    ) { result in
-      guard case .success(let urls) = result, let url = urls.first else {
-        if case .failure(let error) = result {
-          model.errorMessage = error.localizedDescription
-        }
-        return
-      }
-      Task { await model.addDirectory(url) }
     }
   }
 }

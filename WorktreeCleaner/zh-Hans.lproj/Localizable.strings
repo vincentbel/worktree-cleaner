@@ -7,32 +7,40 @@
 "sidebar.total_size_help" = "已计算的总占用（含共享 Git 数据）：%@";
 "sidebar.rescan" = "重新扫描目录范围";
 "sidebar.rescan_help" = "重新扫描当前目录范围内的 Git 项目";
-"toolbar.add_directory" = "添加目录";
+"toolbar.add_directory" = "添加扫描目录";
 "toolbar.refresh" = "刷新";
 "toolbar.refresh_selected_project" = "刷新当前项目的 worktree 状态和建议";
+"app.check_for_updates" = "检查更新…";
+"empty.add_directory" = "选择目录";
+"settings.directories.tab" = "扫描目录";
+"settings.directories.description" = "选择 Worktree Cleaner 要扫描的目录。";
+"settings.updates.tab" = "更新";
+"settings.updates.title" = "软件更新";
+"settings.updates.automatic_check" = "自动检查更新";
+"settings.updates.automatic_download" = "自动下载并安装更新";
+"settings.updates.description" = "更新包会在安装前验证签名。";
 
 "common.ok" = "好";
 "common.cancel" = "取消";
-"common.done" = "完成";
 "alert.operation_failed" = "操作失败";
 "alert.operation_completed" = "操作完成";
 "error.unknown" = "未知错误";
 "success.operation_completed" = "操作已完成。";
 
-"empty.choose_base_directory" = "添加基础目录";
-"empty.choose_base_description" = "Worktree Manager 会递归发现各基础目录中的 Git 项目。";
+"empty.choose_base_directory" = "添加扫描目录";
+"empty.choose_base_description" = "选择一个目录，Worktree Cleaner 会在其中及其子目录中查找 Git 项目。";
 "detail.loading_git_status" = "正在读取 Git 状态…";
 "detail.select_project" = "选择一个项目";
 
-"directory_manager.title" = "基础目录";
-"directory_manager.empty.title" = "尚未添加基础目录";
-"directory_manager.empty.description" = "添加目录后，会递归发现其中的 Git 项目。";
+"directory_manager.title" = "扫描目录";
+"directory_manager.empty.title" = "尚未添加扫描目录";
+"directory_manager.empty.description" = "选择一个目录，以在其中及其子目录中查找 Git 项目。";
 "directory_manager.scanning" = "正在扫描…";
 "directory_manager.scan_failed" = "扫描失败";
 "directory_manager.remove" = "移除";
-"directory_manager.remove_help" = "仅从 Worktree Manager 移除，不会改动磁盘文件";
+"directory_manager.remove_help" = "停止扫描此目录，不会改动磁盘文件";
 "error.directory_duplicate" = "这个目录已经添加：%@";
-"error.directory_overlap" = "这个目录与已有基础目录存在包含关系：%@";
+"error.directory_overlap" = "这个目录与已有扫描目录存在包含关系：%@";
 
 "removal.confirm.title" = "确认删除这个 worktree？";
 "removal.unmerged.title" = "尚未合入 %@，仍要删除？";

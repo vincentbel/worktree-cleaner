@@ -130,3 +130,22 @@ instead.
   worktree directory (including the main worktree) and shared Git data, and
   stays hidden until a full measurement finishes so progressive measurements
   are not mistaken for a final total.
+- Added Sparkle 2.9.6 through Swift Package Manager for direct distribution.
+  The application exposes a localized native update-check command and verifies
+  update archives, appcasts, and release notes with a project-specific EdDSA
+  key. Developer ID export, notarization, appcast generation, and publication
+  are scripted without embedding a GitHub credential in the application.
+- The private source repository cannot directly serve unauthenticated GitHub
+  release assets. A separate public binary-only repository is the default
+  update endpoint; keeping binaries private would require an authenticated
+  gateway and a per-user or per-device authorization design.
+- Moved base-directory management from a modal sheet into the native macOS
+  Settings scene. The main window and Settings scene share one `AppState`, while
+  the Updates tab writes automatic-check and automatic-download choices through
+  Sparkle's own `NSUserDefaults`-backed properties.
+- Kept the sidebar's add-directory shortcut and directory-count footer. The
+  shortcut opens the folder picker directly, while the footer opens the full
+  directory manager in Settings.
+- Automatic update checks default to on through `SUEnableAutomaticChecks=YES`.
+  Providing the preference explicitly suppresses Sparkle's second-launch
+  permission prompt; users can opt out later from the Updates settings tab.

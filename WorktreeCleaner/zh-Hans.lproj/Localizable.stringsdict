@@ -5,7 +5,7 @@
   <key>sidebar.scope.all</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>
-    <string>所有目录 · %#@directories@</string>
+    <string>所有扫描目录 · %#@directories@</string>
     <key>directories</key>
     <dict>
       <key>NSStringFormatSpecTypeKey</key>
@@ -27,7 +27,7 @@
       <key>NSStringFormatValueTypeKey</key>
       <string>d</string>
       <key>other</key>
-      <string>%d 个基础目录</string>
+      <string>%d 个扫描目录</string>
     </dict>
   </dict>
   <key>directory_manager.repository_count</key>

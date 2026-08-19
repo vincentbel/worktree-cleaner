@@ -5,7 +5,7 @@
   <key>sidebar.scope.all</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>
-    <string>All Directories · %#@directories@</string>
+    <string>All Scan Directories · %#@directories@</string>
     <key>directories</key>
     <dict>
       <key>NSStringFormatSpecTypeKey</key>
@@ -29,9 +29,9 @@
       <key>NSStringFormatValueTypeKey</key>
       <string>d</string>
       <key>one</key>
-      <string>%d base directory</string>
+      <string>%d scan directory</string>
       <key>other</key>
-      <string>%d base directories</string>
+      <string>%d scan directories</string>
     </dict>
   </dict>
   <key>directory_manager.repository_count</key>

@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A10000000000000000000008"
-               BuildableName = "WorktreeManager.app"
-               BlueprintName = "WorktreeManager"
-               ReferencedContainer = "container:WorktreeManager.xcodeproj">
+               BuildableName = "WorktreeCleaner.app"
+               BlueprintName = "WorktreeCleaner"
+               ReferencedContainer = "container:WorktreeCleaner.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -44,9 +44,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A10000000000000000000008"
-            BuildableName = "WorktreeManager.app"
-            BlueprintName = "WorktreeManager"
-            ReferencedContainer = "container:WorktreeManager.xcodeproj">
+            BuildableName = "WorktreeCleaner.app"
+            BlueprintName = "WorktreeCleaner"
+            ReferencedContainer = "container:WorktreeCleaner.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -60,9 +60,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A10000000000000000000008"
-            BuildableName = "WorktreeManager.app"
-            BlueprintName = "WorktreeManager"
-            ReferencedContainer = "container:WorktreeManager.xcodeproj">
+            BuildableName = "WorktreeCleaner.app"
+            BlueprintName = "WorktreeCleaner"
+            ReferencedContainer = "container:WorktreeCleaner.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

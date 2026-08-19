@@ -39,7 +39,7 @@ func makeRepositoryWithLinkedWorktree() throws -> (
   )
   try runGit(
     [
-      "-c", "user.name=Worktree Manager Tests",
+      "-c", "user.name=Worktree Cleaner Tests",
       "-c", "user.email=tests@example.com",
       "commit", "--quiet", "--allow-empty", "-m", "Initial commit",
     ],

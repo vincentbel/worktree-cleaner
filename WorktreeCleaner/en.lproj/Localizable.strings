@@ -7,32 +7,40 @@
 "sidebar.total_size_help" = "Measured total size including shared Git data: %@";
 "sidebar.rescan" = "Rescan Directory Scope";
 "sidebar.rescan_help" = "Rescan the selected directory scope for Git projects";
-"toolbar.add_directory" = "Add Directory";
+"toolbar.add_directory" = "Add Scan Directory";
 "toolbar.refresh" = "Refresh";
 "toolbar.refresh_selected_project" = "Refresh the selected project's worktree status and recommendations";
+"app.check_for_updates" = "Check for Updates…";
+"empty.add_directory" = "Choose Directory";
+"settings.directories.tab" = "Scan Directories";
+"settings.directories.description" = "Choose the directories that Worktree Cleaner scans.";
+"settings.updates.tab" = "Updates";
+"settings.updates.title" = "Software Updates";
+"settings.updates.automatic_check" = "Automatically check for updates";
+"settings.updates.automatic_download" = "Automatically download and install updates";
+"settings.updates.description" = "Update signatures are verified before installation.";
 
 "common.ok" = "OK";
 "common.cancel" = "Cancel";
-"common.done" = "Done";
 "alert.operation_failed" = "Operation Failed";
 "alert.operation_completed" = "Operation Completed";
 "error.unknown" = "Unknown error";
 "success.operation_completed" = "The operation completed.";
 
-"empty.choose_base_directory" = "Add a Base Directory";
-"empty.choose_base_description" = "Worktree Manager recursively discovers Git projects inside your base directories.";
+"empty.choose_base_directory" = "Add a Scan Directory";
+"empty.choose_base_description" = "Choose a directory. Worktree Cleaner searches it and its subdirectories for Git projects.";
 "detail.loading_git_status" = "Reading Git status…";
 "detail.select_project" = "Select a Project";
 
-"directory_manager.title" = "Base Directories";
-"directory_manager.empty.title" = "No Base Directories";
-"directory_manager.empty.description" = "Add a directory to discover Git projects inside it.";
+"directory_manager.title" = "Scan Directories";
+"directory_manager.empty.title" = "No Scan Directories";
+"directory_manager.empty.description" = "Choose a directory to search it and its subdirectories for Git projects.";
 "directory_manager.scanning" = "Scanning…";
 "directory_manager.scan_failed" = "Scan failed";
 "directory_manager.remove" = "Remove";
-"directory_manager.remove_help" = "Remove this directory from Worktree Manager without changing files on disk";
+"directory_manager.remove_help" = "Stop scanning this directory without changing files on disk";
 "error.directory_duplicate" = "This directory is already included: %@";
-"error.directory_overlap" = "This directory overlaps an existing base directory: %@";
+"error.directory_overlap" = "This directory overlaps an existing scan directory: %@";
 
 "removal.confirm.title" = "Delete this worktree?";
 "removal.unmerged.title" = "Not merged into %@. Delete anyway?";

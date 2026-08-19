@@ -15,7 +15,7 @@ struct WorkspaceCacheStore {
 
   private let defaults: UserDefaults
   private let logger = Logger(
-    subsystem: "dev.worktreemanager.app",
+    subsystem: "dev.worktreecleaner.app",
     category: "WorkspaceCache"
   )
 
