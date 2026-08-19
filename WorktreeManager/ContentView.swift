@@ -74,6 +74,7 @@ struct ContentView: View {
         if model.isScanning || model.isLoadingSnapshot || model.isMeasuringDiskUsage {
           ProgressView()
             .controlSize(.small)
+            .padding(.leading, 6)
         }
 
         Button(L10n.string("toolbar.choose_directory"), systemImage: "folder.badge.plus") {
