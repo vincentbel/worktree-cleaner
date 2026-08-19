@@ -86,6 +86,7 @@ struct ContentView: View {
             }
           }
         }
+        .contentMargins(.top, 8, for: .scrollContent)
         .overlay {
           if model.visibleRepositories.isEmpty, model.isScanningCurrentScope {
             ProgressView(L10n.string("sidebar.scanning"))
