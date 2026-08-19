@@ -466,8 +466,8 @@ private struct RepositoryRow: View {
 
       VStack(alignment: .trailing, spacing: 3) {
         if repository.linkedWorktreeCount > 0 {
-          Label(
-            "\(repository.linkedWorktreeCount)",
+          RepositoryMetricLabel(
+            value: "\(repository.linkedWorktreeCount)",
             systemImage: "square.stack.3d.up.fill"
           )
           .help(
@@ -484,7 +484,7 @@ private struct RepositoryRow: View {
 
         if let measuredTotalAllocatedBytes {
           let size = formattedBytes(measuredTotalAllocatedBytes)
-          Label(size, systemImage: "internaldrive")
+          RepositoryMetricLabel(value: size, systemImage: "internaldrive")
             .help(L10n.format("sidebar.total_size_help", size))
         }
       }
@@ -494,6 +494,18 @@ private struct RepositoryRow: View {
     }
     .padding(.vertical, 3)
     .opacity(repository.linkedWorktreeCount == 0 ? 0.58 : 1)
+  }
+}
+
+private struct RepositoryMetricLabel: View {
+  let value: String
+  let systemImage: String
+
+  var body: some View {
+    HStack(spacing: 2) {
+      Image(systemName: systemImage)
+      Text(value)
+    }
   }
 }
 
