@@ -520,10 +520,6 @@ private struct RepositoryRow: View {
               count: repository.linkedWorktreeCount
             )
           )
-        } else {
-          Text(L10n.string("sidebar.no_extra"))
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
         }
 
         if let measuredTotalAllocatedBytes {

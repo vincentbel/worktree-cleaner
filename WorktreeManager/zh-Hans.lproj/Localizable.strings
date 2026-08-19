@@ -4,7 +4,6 @@
 "sidebar.scanning" = "正在扫描 Git 项目…";
 "sidebar.empty.title" = "没有找到 Git 项目";
 "sidebar.empty.description" = "请选择其他目录范围，或确认其中包含 Git 仓库。";
-"sidebar.no_extra" = "无额外";
 "sidebar.total_size_help" = "已计算的总占用（含共享 Git 数据）：%@";
 "sidebar.rescan" = "重新扫描目录范围";
 "sidebar.rescan_help" = "重新扫描当前目录范围内的 Git 项目";
