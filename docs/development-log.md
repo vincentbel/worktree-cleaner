@@ -103,6 +103,10 @@ instead.
   and recursive rescanning stay beside the sidebar scope picker, and the scan
   follows its selected root or all-roots scope. Disk measurement remains a
   separate operation.
+- Directory rescanning and selected-project refresh now replace their own icons
+  with fixed-size progress indicators. The former independent toolbar spinner
+  was removed so every loading state stays attached to the action that caused
+  it without shifting adjacent controls.
 - Disk traversal is cached independently for seven days because its result does
   not need Git-status freshness. The UI shows the measurement time and offers an
   explicit recalculation button. New worktrees, expiry, and successful removal

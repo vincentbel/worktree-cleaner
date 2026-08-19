@@ -32,13 +32,25 @@ struct ContentView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .disabled(model.workspaceRoots.urls.isEmpty)
 
-          Button(L10n.string("sidebar.rescan"), systemImage: "arrow.clockwise") {
+          Button {
             Task { await model.scanSelectedScope() }
+          } label: {
+            ZStack {
+              Image(systemName: "arrow.clockwise")
+                .opacity(model.isScanningCurrentScope ? 0 : 1)
+              if model.isScanningCurrentScope {
+                ProgressView()
+                  .controlSize(.small)
+              }
+            }
+            .frame(width: 16, height: 16)
           }
-          .labelStyle(.iconOnly)
           .buttonStyle(.borderless)
           .disabled(model.workspaceRoots.urls.isEmpty || model.isScanningCurrentScope)
           .help(L10n.string("sidebar.rescan_help"))
+          .accessibilityLabel(
+            L10n.string(model.isScanningCurrentScope ? "sidebar.scanning" : "sidebar.rescan")
+          )
 
           Button(L10n.string("toolbar.add_directory"), systemImage: "plus") {
             isChoosingDirectory = true
@@ -141,17 +153,24 @@ struct ContentView: View {
     .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 380)
     .toolbar {
       ToolbarItemGroup {
-        if model.isScanning || model.isLoadingSnapshot {
-          ProgressView()
-            .controlSize(.small)
-            .padding(.leading, 6)
-        }
-
-        Button(L10n.string("toolbar.refresh"), systemImage: "arrow.clockwise") {
+        Button {
           Task { await model.loadSelectedRepository() }
+        } label: {
+          ZStack {
+            Image(systemName: "arrow.clockwise")
+              .opacity(model.isLoadingSnapshot ? 0 : 1)
+            if model.isLoadingSnapshot {
+              ProgressView()
+                .controlSize(.small)
+            }
+          }
+          .frame(width: 20, height: 20)
         }
         .disabled(model.selectedRepositoryID == nil || model.isLoadingSnapshot)
         .help(L10n.string("toolbar.refresh_selected_project"))
+        .accessibilityLabel(
+          L10n.string(model.isLoadingSnapshot ? "detail.loading_git_status" : "toolbar.refresh")
+        )
       }
     }
     .fileImporter(
