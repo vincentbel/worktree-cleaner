@@ -3,6 +3,7 @@ import Foundation
 public struct RepositorySnapshot: Equatable, Sendable {
   public let repository: GitRepository
   public let worktrees: [GitWorktree]
+  public let sharedGitAllocatedBytes: Int64
 }
 
 public struct GitWorktree: Identifiable, Equatable, Sendable {
@@ -15,8 +16,11 @@ public struct GitWorktree: Identifiable, Equatable, Sendable {
   public let isMain: Bool
   public let isLocked: Bool
   public let lockReason: String?
-  public let status: WorktreeStatus
+  public let isPrunable: Bool
+  public let prunableReason: String?
+  public let status: WorktreeStatus?
   public let cleanupRecommendation: CleanupRecommendation
+  public let allocatedBytes: Int64?
 
   init(
     path: URL,
@@ -26,8 +30,11 @@ public struct GitWorktree: Identifiable, Equatable, Sendable {
     isMain: Bool,
     isLocked: Bool,
     lockReason: String?,
-    status: WorktreeStatus,
-    cleanupRecommendation: CleanupRecommendation
+    isPrunable: Bool,
+    prunableReason: String?,
+    status: WorktreeStatus?,
+    cleanupRecommendation: CleanupRecommendation,
+    allocatedBytes: Int64?
   ) {
     self.path = path
     self.head = head
@@ -36,8 +43,11 @@ public struct GitWorktree: Identifiable, Equatable, Sendable {
     self.isMain = isMain
     self.isLocked = isLocked
     self.lockReason = lockReason
+    self.isPrunable = isPrunable
+    self.prunableReason = prunableReason
     self.status = status
     self.cleanupRecommendation = cleanupRecommendation
+    self.allocatedBytes = allocatedBytes
   }
 }
 
@@ -50,6 +60,7 @@ public enum CleanupRecommendation: Equatable, Sendable {
 
 public enum CleanupBlocker: Equatable, Sendable {
   case locked(reason: String?)
+  case missing(reason: String?)
   case uncommittedChanges
 }
 

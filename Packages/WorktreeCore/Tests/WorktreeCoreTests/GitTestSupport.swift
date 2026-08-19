@@ -59,6 +59,17 @@ func runGit(_ arguments: [String], in directory: URL) throws {
   }
 }
 
+func configureRemoteDefaultBranch(in repository: URL) throws {
+  try runGit(
+    ["update-ref", "refs/remotes/origin/main", "refs/heads/main"],
+    in: repository
+  )
+  try runGit(
+    ["symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main"],
+    in: repository
+  )
+}
+
 enum TestGitError: Error {
   case commandFailed(arguments: [String], message: String)
 }

@@ -20,7 +20,7 @@ public struct GitWorkspace: Sendable {
   public func snapshot(of repository: GitRepository) async throws -> RepositorySnapshot {
     let runner = GitCommandRunner()
     let output = try runner.runData(
-      ["worktree", "list", "--porcelain", "-z"],
+      ["worktree", "list", "--porcelain", "-z", "--expire", "now"],
       in: repository.workingTreeURL
     )
     let cleanupTarget = try cleanupTarget(in: repository, using: runner)
@@ -29,7 +29,37 @@ public struct GitWorkspace: Sendable {
       repository: repository,
       cleanupTarget: cleanupTarget
     )
-    return RepositorySnapshot(repository: repository, worktrees: worktrees)
+    let sharedGitAllocatedBytes = try DiskUsageMeasurer().allocatedSize(
+      of: repository.commonGitDirectoryURL
+    )
+    return RepositorySnapshot(
+      repository: repository,
+      worktrees: worktrees,
+      sharedGitAllocatedBytes: sharedGitAllocatedBytes
+    )
+  }
+
+  public func remove(
+    _ worktree: GitWorktree,
+    from repository: GitRepository
+  ) async throws -> RepositorySnapshot {
+    let currentSnapshot = try await snapshot(of: repository)
+    guard let currentWorktree = currentSnapshot.worktrees.first(where: { $0.id == worktree.id })
+    else {
+      throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
+    }
+    guard case .cleanable = currentWorktree.cleanupRecommendation else {
+      throw GitWorkspaceError.worktreeNotCleanable(
+        currentWorktree.path,
+        currentWorktree.cleanupRecommendation
+      )
+    }
+
+    _ = try GitCommandRunner().runData(
+      ["worktree", "remove", currentWorktree.path.path],
+      in: repository.workingTreeURL
+    )
+    return try await snapshot(of: repository)
   }
 
   private func repositoryCandidates(in baseDirectory: URL) throws -> [URL] {
@@ -81,7 +111,7 @@ public struct GitWorkspace: Sendable {
   private func repository(at candidate: URL) throws -> GitRepository {
     let runner = GitCommandRunner()
     let worktreeList = try runner.runData(
-      ["worktree", "list", "--porcelain", "-z"],
+      ["worktree", "list", "--porcelain", "-z", "--expire", "now"],
       in: candidate
     )
     let fields = String(decoding: worktreeList, as: UTF8.self)
@@ -118,16 +148,31 @@ public struct GitWorkspace: Sendable {
     var isDetached = false
     var isLocked = false
     var lockReason: String?
+    var isPrunable = false
+    var prunableReason: String?
 
     for field in fields {
       if field.isEmpty {
         if let path, let head {
           let worktreeURL = canonicalURL(URL(filePath: path))
-          let statusOutput = try GitCommandRunner().runData(
-            ["status", "--porcelain=v2", "--branch", "-z"],
-            in: worktreeURL
-          )
-          let status = parseStatus(statusOutput)
+          let pathExists = FileManager.default.fileExists(atPath: worktreeURL.path)
+          isPrunable = isPrunable || !pathExists
+          let status: WorktreeStatus?
+          let allocatedBytes: Int64?
+          if isPrunable {
+            status = nil
+            allocatedBytes = nil
+          } else {
+            let statusOutput = try GitCommandRunner().runData(
+              ["status", "--porcelain=v2", "--branch", "-z"],
+              in: worktreeURL
+            )
+            status = parseStatus(statusOutput)
+            allocatedBytes = try DiskUsageMeasurer().allocatedSize(
+              of: worktreeURL,
+              excludingImmediateGitEntry: true
+            )
+          }
           let isMain = worktrees.isEmpty
           worktrees.append(
             GitWorktree(
@@ -138,16 +183,21 @@ public struct GitWorkspace: Sendable {
               isMain: isMain,
               isLocked: isLocked,
               lockReason: lockReason,
+              isPrunable: isPrunable,
+              prunableReason: prunableReason,
               status: status,
               cleanupRecommendation: try cleanupRecommendation(
                 head: head,
                 isMain: isMain,
                 isLocked: isLocked,
                 lockReason: lockReason,
+                isPrunable: isPrunable,
+                prunableReason: prunableReason,
                 status: status,
                 target: cleanupTarget,
                 repository: repository
-              )
+              ),
+              allocatedBytes: allocatedBytes
             )
           )
         }
@@ -157,6 +207,8 @@ public struct GitWorkspace: Sendable {
         isDetached = false
         isLocked = false
         lockReason = nil
+        isPrunable = false
+        prunableReason = nil
       } else if field.hasPrefix("worktree ") {
         path = String(field.dropFirst("worktree ".count))
       } else if field.hasPrefix("HEAD ") {
@@ -170,6 +222,11 @@ public struct GitWorkspace: Sendable {
       } else if field.hasPrefix("locked ") {
         isLocked = true
         lockReason = String(field.dropFirst("locked ".count))
+      } else if field == "prunable" {
+        isPrunable = true
+      } else if field.hasPrefix("prunable ") {
+        isPrunable = true
+        prunableReason = String(field.dropFirst("prunable ".count))
       }
     }
 
@@ -198,7 +255,9 @@ public struct GitWorkspace: Sendable {
     isMain: Bool,
     isLocked: Bool,
     lockReason: String?,
-    status: WorktreeStatus,
+    isPrunable: Bool,
+    prunableReason: String?,
+    status: WorktreeStatus?,
     target: String?,
     repository: GitRepository
   ) throws -> CleanupRecommendation {
@@ -207,10 +266,13 @@ public struct GitWorkspace: Sendable {
     }
 
     var blockers: [CleanupBlocker] = []
+    if isPrunable {
+      blockers.append(.missing(reason: prunableReason))
+    }
     if isLocked {
       blockers.append(.locked(reason: lockReason))
     }
-    if !status.isClean {
+    if let status, !status.isClean {
       blockers.append(.uncommittedChanges)
     }
     if !blockers.isEmpty {
@@ -272,6 +334,9 @@ public enum GitWorkspaceError: Error, Equatable {
   case notDirectory(URL)
   case cannotEnumerate(URL)
   case invalidWorktreeList(URL)
+  case cannotMeasureDiskUsage(URL)
+  case worktreeNotRegistered(URL)
+  case worktreeNotCleanable(URL, CleanupRecommendation)
 }
 
 extension GitWorkspaceError: LocalizedError {
@@ -283,6 +348,12 @@ extension GitWorkspaceError: LocalizedError {
       "The selected directory cannot be scanned: \(url.path)"
     case .invalidWorktreeList(let url):
       "Git returned an invalid worktree list for: \(url.path)"
+    case .cannotMeasureDiskUsage(let url):
+      "Disk usage cannot be measured for: \(url.path)"
+    case .worktreeNotRegistered(let url):
+      "The worktree is no longer registered: \(url.path)"
+    case .worktreeNotCleanable(let url, _):
+      "The worktree no longer passes cleanup checks: \(url.path)"
     }
   }
 }
@@ -334,6 +405,70 @@ private struct GitCommandError: LocalizedError {
     let details = standardError.trimmingCharacters(in: .whitespacesAndNewlines)
     return "\(command) failed in \(directory.path) with status "
       + "\(terminationStatus): \(details)"
+  }
+}
+
+private struct DiskUsageMeasurer {
+  private let resourceKeys: Set<URLResourceKey> = [
+    .fileAllocatedSizeKey,
+    .fileSizeKey,
+    .isDirectoryKey,
+    .isRegularFileKey,
+    .isSymbolicLinkKey,
+    .totalFileAllocatedSizeKey,
+  ]
+
+  func allocatedSize(
+    of directory: URL,
+    excludingImmediateGitEntry: Bool = false
+  ) throws -> Int64 {
+    var scanError: Error?
+    guard
+      let enumerator = FileManager.default.enumerator(
+        at: directory,
+        includingPropertiesForKeys: Array(resourceKeys),
+        errorHandler: { _, error in
+          scanError = error
+          return false
+        }
+      )
+    else {
+      throw GitWorkspaceError.cannotMeasureDiskUsage(directory)
+    }
+
+    let excludedGitPath =
+      excludingImmediateGitEntry
+      ? directory.appending(path: ".git").standardizedFileURL.path : nil
+    var total: Int64 = 0
+
+    while let entry = enumerator.nextObject() as? URL {
+      try Task.checkCancellation()
+      let values = try entry.resourceValues(forKeys: resourceKeys)
+
+      if entry.standardizedFileURL.path == excludedGitPath {
+        if values.isDirectory == true {
+          enumerator.skipDescendants()
+        }
+        continue
+      }
+      if values.isSymbolicLink == true {
+        enumerator.skipDescendants()
+        continue
+      }
+      guard values.isRegularFile == true else { continue }
+
+      let allocatedBytes =
+        values.totalFileAllocatedSize
+        ?? values.fileAllocatedSize
+        ?? values.fileSize
+        ?? 0
+      total += Int64(allocatedBytes)
+    }
+
+    if let scanError {
+      throw scanError
+    }
+    return total
   }
 }
 

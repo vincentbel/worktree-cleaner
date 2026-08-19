@@ -70,6 +70,11 @@ A worktree snapshot can contain its path, HEAD, branch or detached state, main
 worktree flag, lock/prunable state, tracked and untracked changes, conflicts,
 upstream divergence, disk usage, and cleanup recommendation.
 
+Inspection supplies `--expire now` when listing worktrees so a path deleted by
+another tool remains visible immediately as a prunable Git record. Such a record
+has no filesystem status or worktree disk measurement and is never eligible for
+normal worktree removal.
+
 The preferred cleanup target is `refs/remotes/origin/HEAD`. If Git cannot resolve
 it, the product must ask for a project-specific target instead of guessing
 `main` or `master`.
@@ -136,4 +141,3 @@ on the main actor.
 - `xcodebuild` verifies that the native application target compiles for macOS.
 - Every behavior change must update tests first; architectural discoveries and
   changed assumptions must update this document or the development log.
-

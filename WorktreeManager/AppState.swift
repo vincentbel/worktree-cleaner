@@ -85,4 +85,17 @@ final class AppState {
       errorMessage = error.localizedDescription
     }
   }
+
+  func remove(_ worktree: GitWorktree) async {
+    guard let repository = snapshot?.repository else { return }
+
+    isLoadingSnapshot = true
+    defer { isLoadingSnapshot = false }
+
+    do {
+      snapshot = try await workspace.remove(worktree, from: repository)
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
 }

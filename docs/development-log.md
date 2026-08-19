@@ -28,3 +28,14 @@ instead.
   `xcodebuild -runFirstLaunch` or modify the host Xcode installation without
   explicit approval; repeat the application build after the host toolchain is
   repaired.
+- Added allocated-byte disk usage for each worktree (excluding its own `.git`)
+  and for shared Git data. Worktrees at or above 5 GB are highlighted, but size
+  does not affect cleanup eligibility.
+- Discovery of a registered worktree whose directory was deleted externally
+  originally caused the entire repository snapshot to fail. Inspection now asks
+  Git to evaluate records with `--expire now`, preserves the missing worktree as
+  a prunable record, and skips status and disk traversal for the absent path.
+- Added single-worktree removal. The public operation refreshes the snapshot as
+  a final preflight, accepts only a current `cleanable` recommendation, invokes
+  `git worktree remove` without force, preserves the branch, and returns a fresh
+  snapshot.

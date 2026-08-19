@@ -39,11 +39,12 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     let linkedWorktree = try XCTUnwrap(
       snapshot.worktrees.first { !$0.isMain }
     )
-    XCTAssertFalse(linkedWorktree.status.isClean)
-    XCTAssertEqual(linkedWorktree.status.untrackedFileCount, 1)
-    XCTAssertEqual(linkedWorktree.status.stagedFileCount, 0)
-    XCTAssertEqual(linkedWorktree.status.modifiedFileCount, 0)
-    XCTAssertEqual(linkedWorktree.status.conflictedFileCount, 0)
+    let status = try XCTUnwrap(linkedWorktree.status)
+    XCTAssertFalse(status.isClean)
+    XCTAssertEqual(status.untrackedFileCount, 1)
+    XCTAssertEqual(status.stagedFileCount, 0)
+    XCTAssertEqual(status.modifiedFileCount, 0)
+    XCTAssertEqual(status.conflictedFileCount, 0)
   }
 
   func testSnapshotReportsLockedWorktreeAndReason() async throws {
@@ -69,14 +70,7 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
   func testSnapshotRecommendsCleanLinkedWorktreeWhoseHeadIsInRemoteDefaultBranch() async throws {
     let fixture = try makeRepositoryWithLinkedWorktree()
     defer { try? FileManager.default.removeItem(at: fixture.base) }
-    try runGit(
-      ["update-ref", "refs/remotes/origin/main", "refs/heads/main"],
-      in: fixture.repository
-    )
-    try runGit(
-      ["symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main"],
-      in: fixture.repository
-    )
+    try configureRemoteDefaultBranch(in: fixture.repository)
     let workspace = GitWorkspace()
     let repositories = try await workspace.discover(in: fixture.base)
     let repository = try XCTUnwrap(repositories.first)
@@ -90,5 +84,43 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
       linkedWorktree.cleanupRecommendation,
       .cleanable(target: "origin/main")
     )
+  }
+
+  func testSnapshotReportsAllocatedDiskUsage() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try Data(repeating: 0xA5, count: 4_096).write(
+      to: fixture.linkedWorktree.appending(path: "generated.bin")
+    )
+    let workspace = GitWorkspace()
+    let repositories = try await workspace.discover(in: fixture.base)
+    let repository = try XCTUnwrap(repositories.first)
+
+    let snapshot = try await workspace.snapshot(of: repository)
+
+    let linkedWorktree = try XCTUnwrap(
+      snapshot.worktrees.first { !$0.isMain }
+    )
+    XCTAssertGreaterThanOrEqual(try XCTUnwrap(linkedWorktree.allocatedBytes), 4_096)
+    XCTAssertGreaterThan(snapshot.sharedGitAllocatedBytes, 0)
+  }
+
+  func testSnapshotKeepsMissingWorktreeAsPrunableRecord() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try FileManager.default.removeItem(at: fixture.linkedWorktree)
+    let workspace = GitWorkspace()
+    let repositories = try await workspace.discover(in: fixture.base)
+    let repository = try XCTUnwrap(repositories.first)
+
+    let snapshot = try await workspace.snapshot(of: repository)
+
+    let missingWorktree = try XCTUnwrap(
+      snapshot.worktrees.first { !$0.isMain }
+    )
+    XCTAssertTrue(missingWorktree.isPrunable)
+    XCTAssertNotNil(missingWorktree.prunableReason)
+    XCTAssertNil(missingWorktree.status)
+    XCTAssertNil(missingWorktree.allocatedBytes)
   }
 }

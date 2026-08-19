@@ -5,6 +5,7 @@ import WorktreeCore
 struct ContentView: View {
   @State private var model = AppState()
   @State private var isChoosingDirectory = false
+  @State private var pendingRemoval: GitWorktree?
 
   var body: some View {
     @Bindable var model = model
@@ -80,6 +81,27 @@ struct ContentView: View {
     } message: {
       Text(model.errorMessage ?? "未知错误")
     }
+    .confirmationDialog(
+      "确认清理这个 worktree？",
+      isPresented: Binding(
+        get: { pendingRemoval != nil },
+        set: { if !$0 { pendingRemoval = nil } }
+      ),
+      titleVisibility: .visible,
+      presenting: pendingRemoval
+    ) { worktree in
+      Button("永久删除 worktree", role: .destructive) {
+        pendingRemoval = nil
+        Task { await model.remove(worktree) }
+      }
+      Button("取消", role: .cancel) {
+        pendingRemoval = nil
+      }
+    } message: { worktree in
+      Text(
+        "将通过 Git 删除 \(worktree.path.path)。此操作不可撤销，但不会删除分支。执行前会重新检查 Git 状态。"
+      )
+    }
     .task {
       await model.restoreSelectedDirectory()
     }
@@ -104,7 +126,9 @@ struct ContentView: View {
     } else if let snapshot = model.snapshot,
       snapshot.repository.id == model.selectedRepositoryID
     {
-      WorktreeTable(snapshot: snapshot)
+      WorktreeTable(snapshot: snapshot) { worktree in
+        pendingRemoval = worktree
+      }
     } else if model.isScanning || model.isLoadingSnapshot {
       ProgressView("正在读取 Git 状态…")
     } else {
@@ -134,63 +158,126 @@ private struct RepositoryRow: View {
 
 private struct WorktreeTable: View {
   let snapshot: RepositorySnapshot
+  let onRemove: (GitWorktree) -> Void
 
   var body: some View {
-    Table(snapshot.worktrees) {
-      TableColumn("Worktree") { worktree in
-        VStack(alignment: .leading, spacing: 3) {
-          Text(worktree.branch ?? "Detached HEAD")
-            .fontWeight(.medium)
-          if worktree.isMain {
-            Text("主工作区")
-              .font(.caption)
-              .foregroundStyle(.secondary)
+    VStack(spacing: 0) {
+      HStack {
+        Text("\(snapshot.worktrees.count) 个 worktree")
+        Spacer()
+        Label(
+          "共享 Git 数据 \(formattedBytes(snapshot.sharedGitAllocatedBytes))",
+          systemImage: "externaldrive"
+        )
+        .foregroundStyle(.secondary)
+      }
+      .font(.callout)
+      .padding(.horizontal)
+      .padding(.vertical, 10)
+
+      Divider()
+
+      Table(snapshot.worktrees) {
+        TableColumn("Worktree") { worktree in
+          VStack(alignment: .leading, spacing: 3) {
+            Text(worktree.branch ?? "Detached HEAD")
+              .fontWeight(.medium)
+            if worktree.isMain {
+              Text("主工作区")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
           }
         }
-      }
-      .width(min: 140, ideal: 180)
+        .width(min: 140, ideal: 180)
 
-      TableColumn("状态") { worktree in
-        StatusLabel(status: worktree.status, isLocked: worktree.isLocked)
-      }
-      .width(min: 110, ideal: 140)
+        TableColumn("状态") { worktree in
+          StatusLabel(
+            status: worktree.status,
+            isLocked: worktree.isLocked,
+            isPrunable: worktree.isPrunable
+          )
+        }
+        .width(min: 110, ideal: 140)
 
-      TableColumn("建议") { worktree in
-        RecommendationLabel(recommendation: worktree.cleanupRecommendation)
-      }
-      .width(min: 180, ideal: 240)
+        TableColumn("占用空间") { worktree in
+          DiskUsageLabel(allocatedBytes: worktree.allocatedBytes)
+        }
+        .width(min: 90, ideal: 110)
 
-      TableColumn("路径") { worktree in
-        Text(worktree.path.path)
-          .font(.caption.monospaced())
-          .foregroundStyle(.secondary)
-          .lineLimit(1)
-          .help(worktree.path.path)
+        TableColumn("建议") { worktree in
+          RecommendationLabel(recommendation: worktree.cleanupRecommendation)
+        }
+        .width(min: 180, ideal: 240)
+
+        TableColumn("路径") { worktree in
+          Text(worktree.path.path)
+            .font(.caption.monospaced())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .help(worktree.path.path)
+        }
+        .width(min: 240, ideal: 420)
+
+        TableColumn("") { worktree in
+          if worktree.cleanupRecommendation.isCleanable {
+            Button("清理", systemImage: "trash", role: .destructive) {
+              onRemove(worktree)
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .help("清理这个 worktree")
+          }
+        }
+        .width(32)
       }
-      .width(min: 240, ideal: 420)
     }
     .navigationTitle(snapshot.repository.name)
   }
 }
 
-private struct StatusLabel: View {
-  let status: WorktreeStatus
-  let isLocked: Bool
+private struct DiskUsageLabel: View {
+  private static let largeWorktreeThreshold: Int64 = 5_000_000_000
+
+  let allocatedBytes: Int64?
 
   var body: some View {
-    if isLocked {
+    if let allocatedBytes {
+      Text(formattedBytes(allocatedBytes))
+        .foregroundStyle(
+          allocatedBytes >= Self.largeWorktreeThreshold ? Color.orange : Color.secondary
+        )
+        .help(allocatedBytes >= Self.largeWorktreeThreshold ? "占用超过 5 GB，建议检查" : "")
+    } else {
+      Text("—")
+        .foregroundStyle(.tertiary)
+    }
+  }
+}
+
+private struct StatusLabel: View {
+  let status: WorktreeStatus?
+  let isLocked: Bool
+  let isPrunable: Bool
+
+  var body: some View {
+    if isPrunable {
+      Label("路径缺失", systemImage: "questionmark.folder.fill")
+        .foregroundStyle(.red)
+    } else if isLocked {
       Label("已锁定", systemImage: "lock.fill")
         .foregroundStyle(.orange)
-    } else if status.isClean {
+    } else if status?.isClean == true {
       Label("干净", systemImage: "checkmark.circle.fill")
         .foregroundStyle(.green)
-    } else {
+    } else if status != nil {
       Label(summary, systemImage: "exclamationmark.triangle.fill")
         .foregroundStyle(.orange)
     }
   }
 
   private var summary: String {
+    guard let status else { return "状态不可用" }
     let count =
       status.stagedFileCount
       + status.modifiedFileCount
@@ -221,6 +308,11 @@ private struct RecommendationLabel: View {
   }
 
   private func blockedTitle(_ reasons: [CleanupBlocker]) -> String {
+    if reasons.contains(where: {
+      if case .missing = $0 { true } else { false }
+    }) {
+      return "路径缺失，需清理登记"
+    }
     if reasons.contains(.uncommittedChanges) {
       return "有未提交修改"
     }
@@ -236,6 +328,20 @@ private struct RecommendationLabel: View {
       "未识别远端默认分支"
     case .notMerged(let target):
       "尚未合入 \(target)"
+    }
+  }
+}
+
+private func formattedBytes(_ bytes: Int64) -> String {
+  ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+}
+
+extension CleanupRecommendation {
+  fileprivate var isCleanable: Bool {
+    if case .cleanable = self {
+      true
+    } else {
+      false
     }
   }
 }
