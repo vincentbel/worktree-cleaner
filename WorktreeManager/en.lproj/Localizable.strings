@@ -1,23 +1,36 @@
 "sidebar.title" = "Projects";
+"sidebar.scope.label" = "Directory Scope";
+"sidebar.manage_directories" = "Manage…";
 "sidebar.scanning" = "Scanning for Git projects…";
 "sidebar.empty.title" = "No Git projects found";
-"sidebar.empty.description" = "Choose another base directory, or make sure this directory contains Git repositories.";
+"sidebar.empty.description" = "Choose another directory scope, or make sure it contains Git repositories.";
 "sidebar.no_extra" = "No extras";
-
-"toolbar.choose_directory" = "Choose Directory";
+"toolbar.add_directory" = "Add Directory";
 "toolbar.refresh" = "Refresh";
+"toolbar.refresh_current_scope" = "Refresh the current directory scope";
 
 "common.ok" = "OK";
 "common.cancel" = "Cancel";
+"common.done" = "Done";
 "alert.operation_failed" = "Operation Failed";
 "alert.operation_completed" = "Operation Completed";
 "error.unknown" = "Unknown error";
 "success.operation_completed" = "The operation completed.";
 
-"empty.choose_base_directory" = "Choose a Base Directory";
-"empty.choose_base_description" = "Worktree Manager recursively discovers Git projects inside it.";
+"empty.choose_base_directory" = "Add a Base Directory";
+"empty.choose_base_description" = "Worktree Manager recursively discovers Git projects inside your base directories.";
 "detail.loading_git_status" = "Reading Git status…";
 "detail.select_project" = "Select a Project";
+
+"directory_manager.title" = "Base Directories";
+"directory_manager.empty.title" = "No Base Directories";
+"directory_manager.empty.description" = "Add a directory to discover Git projects inside it.";
+"directory_manager.scanning" = "Scanning…";
+"directory_manager.scan_failed" = "Scan failed";
+"directory_manager.remove" = "Remove";
+"directory_manager.remove_help" = "Remove this directory from Worktree Manager without changing files on disk";
+"error.directory_duplicate" = "This directory is already included: %@";
+"error.directory_overlap" = "This directory overlaps an existing base directory: %@";
 
 "removal.confirm.title" = "Delete this worktree?";
 "removal.unmerged.title" = "Not merged into %@. Delete anyway?";

@@ -5,16 +5,16 @@ import WorktreeCore
 @MainActor
 @Observable
 final class AppState {
-  private static let baseDirectoryKey = "baseDirectoryPath"
+  private static let baseDirectoryPathsKey = "baseDirectoryPaths"
+  private static let legacyBaseDirectoryKey = "baseDirectoryPath"
 
-  var baseDirectoryURL: URL?
-  var repositories: [GitRepository] = []
+  var workspaceRoots = WorkspaceRoots()
+  var selectedRootID: URL?
   var selectedRepositoryID: GitRepository.ID?
   var snapshot: RepositorySnapshot?
   var worktreeAllocatedBytes: [URL: Int64] = [:]
   var sharedGitAllocatedBytes: Int64?
   var diskUsageMeasuredAt: Date?
-  var isScanning = false
   var isLoadingSnapshot = false
   var isMeasuringDiskUsage = false
   var removingWorktreeID: GitWorktree.ID?
@@ -22,11 +22,35 @@ final class AppState {
   var successMessage: String?
   var transientMessage: String?
 
+  var repositories: [GitRepository] {
+    sortedRepositories(repositoryCatalog.repositories)
+  }
+
+  var visibleRepositories: [GitRepository] {
+    let repositories =
+      selectedRootID.map {
+        repositoryCatalog.repositories(under: $0)
+      } ?? repositoryCatalog.repositories
+    return sortedRepositories(repositories)
+  }
+
+  var isScanning: Bool {
+    !scanningRootIDs.isEmpty
+  }
+
+  var isScanningCurrentScope: Bool {
+    selectedRootID.map { scanningRootIDs.contains($0) } ?? isScanning
+  }
+
   private let workspace: GitWorkspace
   private let defaults: UserDefaults
   private let cacheStore: WorkspaceCacheStore
+  private let scanLimiter = ScanLimiter(limit: 2)
   private var didRestore = false
-  private var activeScanID: UUID?
+  private var repositoryCatalog = RepositoryCatalog()
+  private var scanningRootIDs: Set<URL> = []
+  private var rootScanErrors: [URL: String] = [:]
+  private var activeRootScanIDs: [URL: UUID] = [:]
   private var activeSnapshotLoadID: UUID?
   private var diskUsageTask: Task<Void, Never>?
   private var transientMessageTask: Task<Void, Never>?
@@ -45,106 +69,253 @@ final class AppState {
   func restoreSelectedDirectory() async {
     guard !didRestore else { return }
     didRestore = true
-    guard let path = defaults.string(forKey: Self.baseDirectoryKey) else { return }
+    restoreWorkspaceRoots()
+    guard !workspaceRoots.urls.isEmpty else { return }
 
-    let restoredDirectoryURL = URL(filePath: path, directoryHint: .isDirectory)
-    baseDirectoryURL = restoredDirectoryURL
-    let restoredCache = cacheStore.load(for: restoredDirectoryURL)
+    let restoredCache = cacheStore.load(configuredRootURLs: workspaceRoots.urls)
     if let restoredCache {
-      repositories = restoredCache.repositories.sorted {
-        $0.name.localizedStandardCompare($1.name) == .orderedAscending
-      }
+      repositoryCatalog = RepositoryCatalog(
+        repositories: restoredCache.repositories,
+        associations: restoredCache.associations
+      )
+      selectedRootID = restoredCache.selectedRootID
       for entry in restoredCache.diskUsageEntries {
         diskUsageCache[entry.repositoryID] = entry
       }
-      if repositories.contains(where: { $0.id == restoredCache.selectedRepositoryID }) {
+      if let repositoryID = restoredCache.selectedRepositoryID,
+        repositoryCatalog.contains(repositoryID: repositoryID, under: selectedRootID)
+      {
         selectedRepositoryID = restoredCache.selectedRepositoryID
       } else {
-        selectedRepositoryID = repositories.first?.id
+        selectedRepositoryID = visibleRepositories.first?.id
       }
       if selectedRepositoryID != nil {
         Task { await loadSelectedRepository() }
       }
     }
-    await scan(refreshSelectedRepository: restoredCache == nil)
+    await scanRoots(
+      workspaceRoots.urls,
+      refreshSelectedRepository: restoredCache == nil
+    )
   }
 
-  func chooseDirectory(_ url: URL) async {
-    let selectedURL = URL(
-      filePath: url.standardizedFileURL.path,
-      directoryHint: .isDirectory
-    )
-    baseDirectoryURL = selectedURL
-    defaults.set(selectedURL.path, forKey: Self.baseDirectoryKey)
-    activeScanID = nil
+  func addDirectory(_ url: URL) async {
+    let selectedURL = WorkspaceRoots.normalize(url)
+    do {
+      try workspaceRoots.add(selectedURL)
+    } catch let error as WorkspaceRootError {
+      errorMessage = workspaceRootErrorMessage(error)
+      return
+    } catch {
+      errorMessage = error.localizedDescription
+      return
+    }
+
+    persistWorkspaceRoots()
+    selectedRootID = selectedURL
     activeSnapshotLoadID = nil
     diskUsageTask?.cancel()
-    cacheStore.remove()
-    transientMessageTask?.cancel()
-    repositories = []
     selectedRepositoryID = nil
     snapshot = nil
-    snapshotsByRepositoryID = [:]
-    diskUsageCache = [:]
     worktreeAllocatedBytes = [:]
     sharedGitAllocatedBytes = nil
     diskUsageMeasuredAt = nil
     isLoadingSnapshot = false
     isMeasuringDiskUsage = false
-    transientMessage = nil
-    await scan()
+    persistWorkspaceCache()
+    await scanRoots([selectedURL], refreshSelectedRepository: false)
+  }
+
+  func removeDirectory(_ url: URL) async {
+    let rootID = WorkspaceRoots.normalize(url)
+    guard workspaceRoots.urls.contains(rootID) else { return }
+
+    activeRootScanIDs[rootID] = nil
+    scanningRootIDs.remove(rootID)
+    rootScanErrors[rootID] = nil
+    workspaceRoots.remove(rootID)
+    persistWorkspaceRoots()
+
+    let removedRepositoryIDs = repositoryCatalog.reconcile(
+      root: rootID,
+      discoveredRepositoryIDs: []
+    )
+    removeCachedRepositoryState(for: removedRepositoryIDs)
+    if selectedRootID == rootID {
+      selectedRootID = nil
+    }
+    let selectionChanged = ensureValidSelection()
+    persistWorkspaceCache()
+    if selectionChanged || selectedRepositoryID == nil {
+      await loadSelectedRepository()
+    }
+  }
+
+  func selectRoot(_ rootID: URL?) async {
+    guard selectedRootID != rootID else { return }
+    selectedRootID = rootID
+    let selectionChanged = ensureValidSelection()
+    persistWorkspaceCache()
+    if selectionChanged {
+      await loadSelectedRepository()
+    }
   }
 
   func scan(refreshSelectedRepository: Bool = true) async {
-    guard let baseDirectoryURL else { return }
+    let rootURLs = selectedRootID.map { [$0] } ?? workspaceRoots.urls
+    await scanRoots(rootURLs, refreshSelectedRepository: refreshSelectedRepository)
+  }
 
+  func repositoryCount(under rootID: URL) -> Int {
+    repositoryCatalog.repositories(under: rootID).count
+  }
+
+  func isScanning(_ rootID: URL) -> Bool {
+    scanningRootIDs.contains(rootID)
+  }
+
+  func scanError(for rootID: URL) -> String? {
+    rootScanErrors[rootID]
+  }
+
+  private func scanRoot(_ rootID: URL) async -> Bool {
     let scanID = UUID()
-    activeScanID = scanID
-    isScanning = true
+    activeRootScanIDs[rootID] = scanID
+    scanningRootIDs.insert(rootID)
+    rootScanErrors[rootID] = nil
     defer {
-      if activeScanID == scanID {
-        activeScanID = nil
-        isScanning = false
+      if activeRootScanIDs[rootID] == scanID {
+        activeRootScanIDs[rootID] = nil
+        scanningRootIDs.remove(rootID)
       }
     }
 
     do {
       var discoveredRepositoryIDs: Set<GitRepository.ID> = []
       var startedInitialLoad = false
-      for try await repository in workspace.discover(in: baseDirectoryURL) {
-        guard activeScanID == scanID else { return }
+      for try await repository in workspace.discover(in: rootID) {
+        guard activeRootScanIDs[rootID] == scanID else { return false }
         discoveredRepositoryIDs.insert(repository.id)
-        if let index = repositories.firstIndex(where: { $0.id == repository.id }) {
-          repositories[index] = repository
-        } else {
-          repositories.append(repository)
-        }
-        repositories.sort {
-          $0.name.localizedStandardCompare($1.name) == .orderedAscending
-        }
+        repositoryCatalog.register(repository, foundUnder: rootID)
 
-        if selectedRepositoryID == nil {
+        if selectedRepositoryID == nil,
+          selectedRootID == nil || selectedRootID == rootID
+        {
           selectedRepositoryID = repository.id
           startedInitialLoad = true
           Task { await loadSelectedRepository() }
         }
       }
 
-      guard activeScanID == scanID else { return }
-      repositories.removeAll { !discoveredRepositoryIDs.contains($0.id) }
-      var selectionChanged = false
-      if !repositories.contains(where: { $0.id == selectedRepositoryID }) {
-        selectedRepositoryID = repositories.first?.id
-        startedInitialLoad = false
-        selectionChanged = true
-      }
+      guard activeRootScanIDs[rootID] == scanID else { return false }
+      let removedRepositoryIDs = repositoryCatalog.reconcile(
+        root: rootID,
+        discoveredRepositoryIDs: discoveredRepositoryIDs
+      )
+      removeCachedRepositoryState(for: removedRepositoryIDs)
       persistWorkspaceCache()
-      if !startedInitialLoad, refreshSelectedRepository || selectionChanged {
-        await loadSelectedRepository()
-      }
+      return startedInitialLoad
     } catch {
-      guard activeScanID == scanID else { return }
-      errorMessage = error.localizedDescription
+      guard activeRootScanIDs[rootID] == scanID else { return false }
+      rootScanErrors[rootID] = error.localizedDescription
+      return false
+    }
+  }
+
+  private func scanRoots(
+    _ rootURLs: [URL],
+    refreshSelectedRepository: Bool
+  ) async {
+    let configuredRootIDs = Set(workspaceRoots.urls)
+    let rootURLs = rootURLs.filter { configuredRootIDs.contains($0) }
+    guard !rootURLs.isEmpty else { return }
+
+    var startedInitialLoad = false
+    await withTaskGroup(of: Bool.self) { group in
+      for rootURL in rootURLs {
+        group.addTask {
+          await self.scanLimiter.acquire()
+          let didStartInitialLoad = await self.scanRoot(rootURL)
+          await self.scanLimiter.release()
+          return didStartInitialLoad
+        }
+      }
+      while let didStartInitialLoad = await group.next() {
+        startedInitialLoad = startedInitialLoad || didStartInitialLoad
+      }
+    }
+
+    let selectionChanged = ensureValidSelection()
+    persistWorkspaceCache()
+    if selectionChanged || refreshSelectedRepository && !startedInitialLoad {
+      await loadSelectedRepository()
+    }
+  }
+
+  private func restoreWorkspaceRoots() {
+    let paths: [String]
+    if let storedPaths = defaults.stringArray(forKey: Self.baseDirectoryPathsKey) {
+      paths = storedPaths
+    } else if let legacyPath = defaults.string(forKey: Self.legacyBaseDirectoryKey) {
+      paths = [legacyPath]
+    } else {
+      paths = []
+    }
+
+    var restoredRoots = WorkspaceRoots()
+    for path in paths {
+      do {
+        try restoredRoots.add(URL(filePath: path, directoryHint: .isDirectory))
+      } catch let error as WorkspaceRootError {
+        errorMessage = workspaceRootErrorMessage(error)
+      } catch {
+        errorMessage = error.localizedDescription
+      }
+    }
+    workspaceRoots = restoredRoots
+    persistWorkspaceRoots()
+  }
+
+  private func persistWorkspaceRoots() {
+    defaults.set(
+      workspaceRoots.urls.map(\.path),
+      forKey: Self.baseDirectoryPathsKey
+    )
+    defaults.removeObject(forKey: Self.legacyBaseDirectoryKey)
+  }
+
+  private func ensureValidSelection() -> Bool {
+    if let selectedRepositoryID,
+      repositoryCatalog.contains(repositoryID: selectedRepositoryID, under: selectedRootID)
+    {
+      return false
+    }
+    let previousRepositoryID = selectedRepositoryID
+    selectedRepositoryID = visibleRepositories.first?.id
+    return selectedRepositoryID != previousRepositoryID
+  }
+
+  private func removeCachedRepositoryState(
+    for repositoryIDs: Set<GitRepository.ID>
+  ) {
+    for repositoryID in repositoryIDs {
+      snapshotsByRepositoryID[repositoryID] = nil
+      diskUsageCache[repositoryID] = nil
+    }
+  }
+
+  private func sortedRepositories(_ repositories: [GitRepository]) -> [GitRepository] {
+    repositories.sorted {
+      $0.name.localizedStandardCompare($1.name) == .orderedAscending
+    }
+  }
+
+  private func workspaceRootErrorMessage(_ error: WorkspaceRootError) -> String {
+    switch error {
+    case .duplicate(let existingURL):
+      L10n.format("error.directory_duplicate", existingURL.path)
+    case .overlaps(let existingURL):
+      L10n.format("error.directory_overlap", existingURL.path)
     }
   }
 
@@ -158,7 +329,9 @@ final class AppState {
   func loadSelectedRepository() async {
     guard
       let selectedRepositoryID,
-      let repository = repositories.first(where: { $0.id == selectedRepositoryID })
+      let repository = repositoryCatalog.repositories.first(where: {
+        $0.id == selectedRepositoryID
+      })
     else {
       activeSnapshotLoadID = nil
       snapshot = nil
@@ -287,10 +460,7 @@ final class AppState {
   }
 
   private func updateRepository(_ repository: GitRepository) {
-    guard let index = repositories.firstIndex(where: { $0.id == repository.id }) else {
-      return
-    }
-    repositories[index] = repository
+    repositoryCatalog.update(repository)
   }
 
   private func applyCachedDiskUsage(for repositoryID: GitRepository.ID) {
@@ -306,11 +476,11 @@ final class AppState {
   }
 
   private func persistWorkspaceCache() {
-    guard let baseDirectoryURL else { return }
     cacheStore.save(
       WorkspaceCache(
-        baseDirectoryURL: baseDirectoryURL,
-        repositories: repositories,
+        repositories: repositoryCatalog.repositories,
+        associations: repositoryCatalog.associations,
+        selectedRootID: selectedRootID,
         selectedRepositoryID: selectedRepositoryID,
         diskUsageEntries: Array(diskUsageCache.values)
       )
@@ -365,6 +535,33 @@ final class AppState {
         guard activeSnapshotLoadID == loadID else { return }
         errorMessage = error.localizedDescription
       }
+    }
+  }
+}
+
+private actor ScanLimiter {
+  private var availablePermits: Int
+  private var waiters: [CheckedContinuation<Void, Never>] = []
+
+  init(limit: Int) {
+    availablePermits = limit
+  }
+
+  func acquire() async {
+    if availablePermits > 0 {
+      availablePermits -= 1
+      return
+    }
+    await withCheckedContinuation { continuation in
+      waiters.append(continuation)
+    }
+  }
+
+  func release() {
+    if waiters.isEmpty {
+      availablePermits += 1
+    } else {
+      waiters.removeFirst().resume()
     }
   }
 }

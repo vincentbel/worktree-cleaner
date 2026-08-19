@@ -2,6 +2,54 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <key>sidebar.scope.all</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>All Directories · %#@directories@</string>
+    <key>directories</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>%d</string>
+      <key>other</key>
+      <string>%d</string>
+    </dict>
+  </dict>
+  <key>sidebar.base_directory_count</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@directories@</string>
+    <key>directories</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>%d base directory</string>
+      <key>other</key>
+      <string>%d base directories</string>
+    </dict>
+  </dict>
+  <key>directory_manager.repository_count</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@repositories@</string>
+    <key>repositories</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>%d project</string>
+      <key>other</key>
+      <string>%d projects</string>
+    </dict>
+  </dict>
   <key>sidebar.section.with_linked</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>

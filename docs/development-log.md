@@ -99,3 +99,16 @@ instead.
   explicit recalculation button. New worktrees, expiry, and successful removal
   trigger a fresh measurement; deletion safety still performs a live Git
   preflight and never relies on cached status.
+- Base-directory configuration now supports multiple non-overlapping roots.
+  Repository identity remains the normalized common Git directory, while a
+  separate association catalog records every root that found it; this dedupes a
+  project globally without breaking directory-scoped filtering. Exact duplicate
+  and parent/child roots are rejected.
+- The sidebar can filter all directories or one directory, and refresh follows
+  that current scope. Root scans publish progressively with at most two roots
+  active at once. A directory manager exposes project counts, scan progress and
+  per-root errors; removing a root changes only app configuration and cache.
+- `workspaceCache.v2` persists multiple roots, associations, scope, selection,
+  and disk measurements. Existing `baseDirectoryPath` and `workspaceCache.v1`
+  values migrate on first launch so the previous project list can still render
+  immediately before background reconciliation.

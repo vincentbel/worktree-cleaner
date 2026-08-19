@@ -22,9 +22,10 @@ and disk usage.
   libgit2.
 - Keep UI state in a small `@Observable`, `@MainActor` store. Do not introduce a
   third-party state-management framework.
-- Persist the selected root plus a small, discardable cache of repository paths,
-  the last selection, and disk-usage measurements in `UserDefaults`. Git status
-  remains derived at runtime, so the first version does not need a database.
+- Persist the configured base-directory list plus a small, discardable cache of
+  root-to-repository associations, the last scope and project selection, and
+  disk-usage measurements in `UserDefaults`. Git status remains derived at
+  runtime, so the first version does not need a database.
 - Distribute the first version with Developer ID signing and notarization, with
   App Sandbox disabled. This allows a repository below the selected root to
   reference registered worktrees outside that root.
@@ -47,10 +48,16 @@ instead of mocking internal collaborators.
 
 ## Repository discovery
 
+The app accepts multiple base directories. Exact duplicates and parent/child
+overlaps are rejected so a subtree is not intentionally scanned twice. Each
+configured root is still independent: an inaccessible root remains configured
+and reports its own scan error instead of hiding cached projects from every
+other root.
+
 The scanner recursively looks for both `.git` directories and `.git` files. Each
 candidate is validated with Git rather than accepted from its filesystem shape
 alone. A validated logical repository is emitted immediately; the app updates
-the sidebar without waiting for the rest of the selected directory to finish.
+the sidebar without waiting for the rest of that directory to finish.
 
 - `git worktree list --porcelain -z` identifies the main working-tree root and
   validates that the candidate belongs to a registered worktree set. The same
@@ -58,16 +65,21 @@ the sidebar without waiting for the rest of the selected directory to finish.
   discovery does not run status checks for every repository.
 - `git rev-parse --git-common-dir` identifies the shared repository metadata.
 - The normalized common Git directory is the logical repository identity. This
-  prevents a linked worktree from appearing as a second project in the sidebar.
+  prevents a linked worktree from appearing as a second project in the sidebar,
+  including when the main worktree and a linked worktree are discovered under
+  different configured roots. The catalog retains every root association so a
+  directory-scoped filter still shows the project in both places.
 - Finding a repository does not stop traversal of its ordinary subdirectories,
   so nested repositories and submodules remain discoverable.
 - The scanner does not descend into `.git`, does not follow directory symbolic
   links, and stops traversing common generated or dependency directories. The
   skipped names cover Swift/Xcode, Node, Python, Java, Rust, Terraform, CocoaPods,
   Carthage, vendored dependencies, and common build/cache output.
-- Cancellation stops traversal between filesystem entries. Starting a scan for
-  another root supersedes the previous stream so stale results cannot update the
-  UI.
+- Cancellation stops traversal between filesystem entries. Starting another
+  scan for the same root supersedes its previous stream so stale results cannot
+  update the UI. At most two configured roots scan concurrently; additional
+  roots wait in order while each active root continues publishing repositories
+  progressively.
 
 ## Worktree inspection
 
@@ -152,7 +164,9 @@ rule, not a safety rule, and can be revisited after real usage data exists.
 
 The primary window uses a two-column `NavigationSplitView`:
 
-- Sidebar: discovered logical repositories and their aggregate health.
+- Sidebar: discovered logical repositories and their aggregate health. A scope
+  picker switches between all configured directories and one directory without
+  duplicating the project catalog. Refresh rescans the current scope.
 - Repositories with extra linked worktrees appear first and show the extra
   worktree count. Repositories with only their main working tree appear in a
   muted section at the bottom. A refreshed snapshot updates this grouping after
@@ -168,13 +182,19 @@ The primary window uses a two-column `NavigationSplitView`:
 - Copying a path reports completion with a short, non-blocking toast. Destructive
   operation results continue to use explicit feedback because they warrant more
   attention.
-- Toolbar: choose root, rescan, and later refresh remote refs explicitly.
+- Toolbar: add a base directory, rescan the current scope, and later refresh
+  remote refs explicitly. A directory manager shows every configured path,
+  project count, scan progress or error, and removes configuration without
+  changing Git repositories or files on disk.
 
-The sidebar restores its cached repository list and last selection immediately,
-then reconciles them with a progressive background scan. Worktree snapshots are
-cached only in memory so revisiting a project can show its previous state while
-Git status refreshes. Disk measurement progress stays in the detail area and is
-not treated as a blocking window-level load.
+The sidebar restores its cached repository list, root associations, scope, and
+last selection immediately, then reconciles each root with a progressive
+background scan. The former single-root defaults and cache records migrate to
+the multi-root format on first load. Adding a root scans only that root; removing
+one drops only its associations and orphaned cached projects. Worktree snapshots
+are cached only in memory so revisiting a project can show its previous state
+while Git status refreshes. Disk measurement progress stays in the detail area
+and is not treated as a blocking window-level load.
 
 Long-running scans and inspections are asynchronous, cancellable, and never run
 on the main actor.

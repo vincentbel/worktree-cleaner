@@ -5,66 +5,116 @@ import WorktreeCore
 struct ContentView: View {
   @State private var model = AppState()
   @State private var isChoosingDirectory = false
+  @State private var isManagingDirectories = false
   @State private var pendingRemoval: GitWorktree?
 
   var body: some View {
     NavigationSplitView {
-      List(selection: repositorySelection) {
-        if !repositoriesWithLinkedWorktrees.isEmpty {
-          Section {
-            ForEach(repositoriesWithLinkedWorktrees) { repository in
-              RepositoryRow(repository: repository)
-                .tag(repository.id)
-            }
-          } header: {
+      VStack(spacing: 0) {
+        HStack(spacing: 8) {
+          Picker(L10n.string("sidebar.scope.label"), selection: rootSelection) {
             Text(
               L10n.plural(
-                "sidebar.section.with_linked",
-                count: repositoriesWithLinkedWorktrees.count
+                "sidebar.scope.all",
+                count: model.workspaceRoots.urls.count
               )
+            )
+            .tag(URL?.none)
+
+            ForEach(model.workspaceRoots.urls, id: \.self) { rootURL in
+              Text(rootURL.lastPathComponent)
+                .tag(Optional(rootURL))
+            }
+          }
+          .labelsHidden()
+          .pickerStyle(.menu)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .disabled(model.workspaceRoots.urls.isEmpty)
+
+          Button(L10n.string("toolbar.add_directory"), systemImage: "plus") {
+            isChoosingDirectory = true
+          }
+          .labelStyle(.iconOnly)
+          .buttonStyle(.borderless)
+          .help(L10n.string("toolbar.add_directory"))
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+
+        Divider()
+
+        List(selection: repositorySelection) {
+          if !repositoriesWithLinkedWorktrees.isEmpty {
+            Section {
+              ForEach(repositoriesWithLinkedWorktrees) { repository in
+                RepositoryRow(repository: repository)
+                  .tag(repository.id)
+              }
+            } header: {
+              Text(
+                L10n.plural(
+                  "sidebar.section.with_linked",
+                  count: repositoriesWithLinkedWorktrees.count
+                )
+              )
+            }
+          }
+
+          if !repositoriesWithoutLinkedWorktrees.isEmpty {
+            Section {
+              ForEach(repositoriesWithoutLinkedWorktrees) { repository in
+                RepositoryRow(repository: repository)
+                  .tag(repository.id)
+              }
+            } header: {
+              Text(
+                L10n.plural(
+                  "sidebar.section.main_only",
+                  count: repositoriesWithoutLinkedWorktrees.count
+                )
+              )
+            }
+          }
+        }
+        .overlay {
+          if model.visibleRepositories.isEmpty, model.isScanningCurrentScope {
+            ProgressView(L10n.string("sidebar.scanning"))
+          } else if model.visibleRepositories.isEmpty,
+            !model.workspaceRoots.urls.isEmpty
+          {
+            ContentUnavailableView(
+              L10n.string("sidebar.empty.title"),
+              systemImage: "folder.badge.questionmark",
+              description: Text(L10n.string("sidebar.empty.description"))
             )
           }
         }
 
-        if !repositoriesWithoutLinkedWorktrees.isEmpty {
-          Section {
-            ForEach(repositoriesWithoutLinkedWorktrees) { repository in
-              RepositoryRow(repository: repository)
-                .tag(repository.id)
-            }
-          } header: {
-            Text(
-              L10n.plural(
-                "sidebar.section.main_only",
-                count: repositoriesWithoutLinkedWorktrees.count
+        if !model.workspaceRoots.urls.isEmpty {
+          Divider()
+          Button {
+            isManagingDirectories = true
+          } label: {
+            HStack {
+              Text(
+                L10n.plural(
+                  "sidebar.base_directory_count",
+                  count: model.workspaceRoots.urls.count
+                )
               )
-            )
+              Spacer()
+              Text(L10n.string("sidebar.manage_directories"))
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .contentShape(Rectangle())
           }
+          .buttonStyle(.plain)
+          .padding(10)
+          .background(.bar)
         }
       }
       .navigationTitle(L10n.string("sidebar.title"))
-      .overlay {
-        if model.repositories.isEmpty, model.isScanning {
-          ProgressView(L10n.string("sidebar.scanning"))
-        } else if model.repositories.isEmpty, model.baseDirectoryURL != nil {
-          ContentUnavailableView(
-            L10n.string("sidebar.empty.title"),
-            systemImage: "folder.badge.questionmark",
-            description: Text(L10n.string("sidebar.empty.description"))
-          )
-        }
-      }
-      .safeAreaInset(edge: .bottom) {
-        if let baseDirectoryURL = model.baseDirectoryURL {
-          Text(baseDirectoryURL.path)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(2)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(10)
-            .background(.bar)
-        }
-      }
     } detail: {
       detail
     }
@@ -77,14 +127,15 @@ struct ContentView: View {
             .padding(.leading, 6)
         }
 
-        Button(L10n.string("toolbar.choose_directory"), systemImage: "folder.badge.plus") {
+        Button(L10n.string("toolbar.add_directory"), systemImage: "folder.badge.plus") {
           isChoosingDirectory = true
         }
 
         Button(L10n.string("toolbar.refresh"), systemImage: "arrow.clockwise") {
           Task { await model.scan() }
         }
-        .disabled(model.baseDirectoryURL == nil || model.isScanning)
+        .disabled(model.workspaceRoots.urls.isEmpty || model.isScanning)
+        .help(L10n.string("toolbar.refresh_current_scope"))
       }
     }
     .fileImporter(
@@ -98,7 +149,10 @@ struct ContentView: View {
         }
         return
       }
-      Task { await model.chooseDirectory(url) }
+      Task { await model.addDirectory(url) }
+    }
+    .sheet(isPresented: $isManagingDirectories) {
+      DirectoryManagerView(model: model)
     }
     .alert(
       L10n.string("alert.operation_failed"),
@@ -160,11 +214,21 @@ struct ContentView: View {
   }
 
   private var repositoriesWithLinkedWorktrees: [GitRepository] {
-    model.repositories.filter { $0.linkedWorktreeCount > 0 }
+    model.visibleRepositories.filter { $0.linkedWorktreeCount > 0 }
   }
 
   private var repositoriesWithoutLinkedWorktrees: [GitRepository] {
-    model.repositories.filter { $0.linkedWorktreeCount == 0 }
+    model.visibleRepositories.filter { $0.linkedWorktreeCount == 0 }
+  }
+
+  private var rootSelection: Binding<URL?> {
+    Binding(
+      get: { model.selectedRootID },
+      set: { rootID in
+        guard model.selectedRootID != rootID else { return }
+        Task { await model.selectRoot(rootID) }
+      }
+    )
   }
 
   private var repositorySelection: Binding<GitRepository.ID?> {
@@ -179,13 +243,13 @@ struct ContentView: View {
 
   @ViewBuilder
   private var detail: some View {
-    if model.baseDirectoryURL == nil {
+    if model.workspaceRoots.urls.isEmpty {
       ContentUnavailableView {
         Label(L10n.string("empty.choose_base_directory"), systemImage: "folder.badge.plus")
       } description: {
         Text(L10n.string("empty.choose_base_description"))
       } actions: {
-        Button(L10n.string("toolbar.choose_directory")) {
+        Button(L10n.string("toolbar.add_directory")) {
           isChoosingDirectory = true
         }
         .buttonStyle(.borderedProminent)
@@ -250,6 +314,125 @@ struct ContentView: View {
       )
     default:
       return L10n.format("removal.confirm.message", worktree.path.path)
+    }
+  }
+}
+
+private struct DirectoryManagerView: View {
+  let model: AppState
+
+  @Environment(\.dismiss) private var dismiss
+  @State private var isChoosingDirectory = false
+
+  var body: some View {
+    VStack(spacing: 0) {
+      HStack {
+        Text(L10n.string("directory_manager.title"))
+          .font(.title2.weight(.semibold))
+        Spacer()
+        Button(L10n.string("toolbar.add_directory"), systemImage: "plus") {
+          isChoosingDirectory = true
+        }
+      }
+      .padding()
+
+      Divider()
+
+      if model.workspaceRoots.urls.isEmpty {
+        ContentUnavailableView(
+          L10n.string("directory_manager.empty.title"),
+          systemImage: "folder.badge.plus",
+          description: Text(L10n.string("directory_manager.empty.description"))
+        )
+      } else {
+        List(model.workspaceRoots.urls, id: \.self) { rootURL in
+          HStack(spacing: 12) {
+            Image(systemName: "folder")
+              .font(.title3)
+              .foregroundStyle(.secondary)
+              .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 3) {
+              Text(rootURL.lastPathComponent)
+                .fontWeight(.medium)
+              Text(rootURL.path)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .textSelection(.enabled)
+                .help(rootURL.path)
+            }
+
+            Spacer(minLength: 16)
+
+            if model.isScanning(rootURL) {
+              Label {
+                Text(L10n.string("directory_manager.scanning"))
+              } icon: {
+                ProgressView()
+                  .controlSize(.small)
+              }
+              .font(.caption)
+              .foregroundStyle(.secondary)
+            } else if let error = model.scanError(for: rootURL) {
+              Label(
+                L10n.string("directory_manager.scan_failed"),
+                systemImage: "exclamationmark.triangle.fill"
+              )
+              .font(.caption)
+              .foregroundStyle(.orange)
+              .help(error)
+            }
+
+            Text(
+              L10n.plural(
+                "directory_manager.repository_count",
+                count: model.repositoryCount(under: rootURL)
+              )
+            )
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+            .frame(minWidth: 72, alignment: .trailing)
+
+            Button(
+              L10n.string("directory_manager.remove"),
+              systemImage: "trash",
+              role: .destructive
+            ) {
+              Task { await model.removeDirectory(rootURL) }
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .help(L10n.string("directory_manager.remove_help"))
+          }
+          .padding(.vertical, 5)
+        }
+      }
+
+      Divider()
+
+      HStack {
+        Spacer()
+        Button(L10n.string("common.done")) {
+          dismiss()
+        }
+        .keyboardShortcut(.defaultAction)
+      }
+      .padding()
+    }
+    .frame(minWidth: 640, minHeight: 360)
+    .fileImporter(
+      isPresented: $isChoosingDirectory,
+      allowedContentTypes: [.folder],
+      allowsMultipleSelection: false
+    ) { result in
+      guard case .success(let urls) = result, let url = urls.first else {
+        if case .failure(let error) = result {
+          model.errorMessage = error.localizedDescription
+        }
+        return
+      }
+      Task { await model.addDirectory(url) }
     }
   }
 }
