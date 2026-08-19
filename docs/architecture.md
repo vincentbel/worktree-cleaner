@@ -102,6 +102,14 @@ of the following:
 - Its HEAD is an ancestor of the selected cleanup target.
 - The same checks pass again immediately before removal.
 
+A user may also explicitly remove a clean linked worktree whose HEAD is not an
+ancestor of the cleanup target. This remains a "needs review" result rather than
+becoming a cleanup recommendation. The UI must name the target branch, use a
+stronger destructive warning, and explain that the worktree directory cannot be
+restored automatically. The final preflight still rejects main, missing, locked,
+or dirty worktrees. An unavailable cleanup target is not enough evidence to
+offer this override.
+
 Removal uses `git worktree remove <absolute-path>` without `--force`. The first
 version never deletes the associated branch as a side effect. Missing/prunable
 administrative records are handled separately from worktree removal.
@@ -138,6 +146,12 @@ The primary window uses a two-column `NavigationSplitView`:
 - Sidebar: discovered logical repositories and their aggregate health.
 - Detail: a native table of worktrees with branch, path, status, disk usage,
   recommendation, and actions.
+- Worktree data can scroll horizontally, while a narrow trailing action column
+  stays visible at the right edge for path actions and removal progress.
+- Path actions allow copying and opening through Finder or detected developer
+  applications. Detection checks system, `/Applications`, and the user's
+  `Applications` directory; opening uses native `NSWorkspace` and application
+  icons come from the installed app bundles.
 - Toolbar: choose root, rescan, and later refresh remote refs explicitly.
 
 Long-running scans and inspections are asynchronous, cancellable, and never run

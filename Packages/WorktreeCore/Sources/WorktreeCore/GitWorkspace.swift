@@ -78,7 +78,10 @@ public struct GitWorkspace: Sendable {
     else {
       throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
     }
-    guard case .cleanable = currentWorktree.cleanupRecommendation else {
+    switch currentWorktree.cleanupRecommendation {
+    case .cleanable, .needsReview(reason: .notMerged):
+      break
+    default:
       throw GitWorkspaceError.worktreeNotCleanable(
         currentWorktree.path,
         currentWorktree.cleanupRecommendation

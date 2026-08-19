@@ -16,7 +16,9 @@ final class AppState {
   var isScanning = false
   var isLoadingSnapshot = false
   var isMeasuringDiskUsage = false
+  var removingWorktreeID: GitWorktree.ID?
   var errorMessage: String?
+  var successMessage: String?
 
   private let workspace: GitWorkspace
   private let defaults: UserDefaults
@@ -154,16 +156,24 @@ final class AppState {
   }
 
   func remove(_ worktree: GitWorktree) async {
-    guard let repository = snapshot?.repository else { return }
+    guard let repository = snapshot?.repository,
+      removingWorktreeID == nil
+    else { return }
 
     let loadID = UUID()
     activeSnapshotLoadID = loadID
     diskUsageTask?.cancel()
     isMeasuringDiskUsage = false
     isLoadingSnapshot = true
+    removingWorktreeID = worktree.id
+    errorMessage = nil
+    successMessage = nil
     defer {
       if activeSnapshotLoadID == loadID {
         isLoadingSnapshot = false
+      }
+      if removingWorktreeID == worktree.id {
+        removingWorktreeID = nil
       }
     }
 
@@ -176,6 +186,12 @@ final class AppState {
       worktreeAllocatedBytes = [:]
       sharedGitAllocatedBytes = nil
       startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
+      if let branch = worktree.branch {
+        successMessage =
+          "已删除 \(worktree.path.lastPathComponent)，分支 \(branch) 仍然保留。"
+      } else {
+        successMessage = "已删除 \(worktree.path.lastPathComponent)。原 worktree 为 Detached HEAD。"
+      }
     } catch {
       guard activeSnapshotLoadID == loadID else { return }
       errorMessage = error.localizedDescription

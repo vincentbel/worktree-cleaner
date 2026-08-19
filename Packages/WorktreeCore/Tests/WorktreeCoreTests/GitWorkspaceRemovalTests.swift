@@ -60,4 +60,43 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     let currentSnapshot = try await workspace.snapshot(of: repository)
     XCTAssertEqual(currentSnapshot.worktrees.count, 2)
   }
+
+  func testRemoveDeletesCleanLinkedWorktreeWhoseCommitIsNotMerged() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try configureRemoteDefaultBranch(in: fixture.repository)
+    try Data("agent result".utf8).write(
+      to: fixture.linkedWorktree.appending(path: "result.txt")
+    )
+    try runGit(["add", "result.txt"], in: fixture.linkedWorktree)
+    try runGit(
+      [
+        "-c", "user.name=Worktree Manager Tests",
+        "-c", "user.email=tests@example.com",
+        "commit", "--quiet", "-m", "Unmerged agent result",
+      ],
+      in: fixture.linkedWorktree
+    )
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let linkedWorktree = try XCTUnwrap(
+      initialSnapshot.worktrees.first { !$0.isMain }
+    )
+    XCTAssertEqual(
+      linkedWorktree.cleanupRecommendation,
+      .needsReview(reason: .notMerged(target: "origin/main"))
+    )
+
+    let updatedSnapshot = try await workspace.remove(
+      linkedWorktree,
+      from: repository
+    )
+
+    XCTAssertEqual(updatedSnapshot.worktrees.count, 1)
+    XCTAssertTrue(updatedSnapshot.worktrees[0].isMain)
+  }
 }

@@ -55,3 +55,17 @@ instead.
 - The host Xcode installation now completes the command-line macOS application
   build successfully; the earlier `IDESimulatorFoundation` issue is no longer a
   current local blocker.
+- Worktree rows now keep their trailing operation controls visible while the
+  data columns scroll horizontally. A first layout attempt still allowed the
+  content's ideal width to push the action column off-screen; constraining the
+  scroll area from the available geometry fixed this and was verified in the
+  running app.
+- Added native path actions based on the referenced e-tars target list. The app
+  detects installed editors and terminals in system, global, and per-user
+  application locations, uses their bundle icons, and opens paths with
+  `NSWorkspace`. Finder and path copying are included.
+- Clean linked worktrees with commits not merged into the configured cleanup
+  target can now be explicitly removed. They keep the "needs review" status and
+  require a stronger warning; main, dirty, locked, missing, and unknown-target
+  cases remain blocked. Removal shows an in-row progress indicator, returns a
+  fresh snapshot, and reports success or failure to the user.
