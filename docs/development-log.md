@@ -98,6 +98,10 @@ instead.
   persisted repository list and last selection render immediately while the
   recursive scan reconciles them; in-memory snapshots render immediately when
   revisiting a project while Git status refreshes in the background.
+- Toolbar actions now follow their visible scope: the trailing refresh button
+  reloads only the selected project's worktree state, base-directory addition
+  stays beside the sidebar scope picker, and each directory-manager row owns
+  its recursive rescan action. Disk measurement remains a separate operation.
 - Disk traversal is cached independently for seven days because its result does
   not need Git-status freshness. The UI shows the measurement time and offers an
   explicit recalculation button. New worktrees, expiry, and successful removal

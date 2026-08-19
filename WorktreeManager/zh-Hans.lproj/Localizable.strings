@@ -8,7 +8,7 @@
 "sidebar.total_size_help" = "已计算的总占用（含共享 Git 数据）：%@";
 "toolbar.add_directory" = "添加目录";
 "toolbar.refresh" = "刷新";
-"toolbar.refresh_current_scope" = "刷新当前目录范围";
+"toolbar.refresh_selected_project" = "刷新当前项目的 worktree 状态和建议";
 
 "common.ok" = "好";
 "common.cancel" = "取消";
@@ -28,6 +28,8 @@
 "directory_manager.empty.description" = "添加目录后，会递归发现其中的 Git 项目。";
 "directory_manager.scanning" = "正在扫描…";
 "directory_manager.scan_failed" = "扫描失败";
+"directory_manager.rescan" = "重新扫描";
+"directory_manager.rescan_help" = "重新扫描此目录中的 Git 项目";
 "directory_manager.remove" = "移除";
 "directory_manager.remove_help" = "仅从 Worktree Manager 移除，不会改动磁盘文件";
 "error.directory_duplicate" = "这个目录已经添加：%@";

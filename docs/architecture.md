@@ -188,10 +188,11 @@ The primary window uses a two-column `NavigationSplitView`:
 - Copying a path reports completion with a short, non-blocking toast. Destructive
   operation results continue to use explicit feedback because they warrant more
   attention.
-- Toolbar: add a base directory, rescan the current scope, and later refresh
-  remote refs explicitly. A directory manager shows every configured path,
-  project count, scan progress or error, and removes configuration without
-  changing Git repositories or files on disk.
+- Toolbar: refresh the selected project's worktree status and recommendations;
+  disk measurement remains a separate detail action. Base-directory addition
+  stays in the sidebar, while the directory manager shows every configured
+  path, project count, scan progress or error, supports rescanning one root,
+  and removes configuration without changing Git repositories or files on disk.
 
 The sidebar restores its cached repository list, root associations, scope, and
 last selection immediately, then reconciles each root with a progressive

@@ -139,15 +139,11 @@ struct ContentView: View {
             .padding(.leading, 6)
         }
 
-        Button(L10n.string("toolbar.add_directory"), systemImage: "folder.badge.plus") {
-          isChoosingDirectory = true
-        }
-
         Button(L10n.string("toolbar.refresh"), systemImage: "arrow.clockwise") {
-          Task { await model.scan() }
+          Task { await model.loadSelectedRepository() }
         }
-        .disabled(model.workspaceRoots.urls.isEmpty || model.isScanning)
-        .help(L10n.string("toolbar.refresh_current_scope"))
+        .disabled(model.selectedRepositoryID == nil || model.isLoadingSnapshot)
+        .help(L10n.string("toolbar.refresh_selected_project"))
       }
     }
     .fileImporter(
@@ -424,6 +420,17 @@ private struct DirectoryManagerView: View {
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
             .frame(minWidth: 72, alignment: .trailing)
+
+            Button(
+              L10n.string("directory_manager.rescan"),
+              systemImage: "arrow.clockwise"
+            ) {
+              Task { await model.scanDirectory(rootURL) }
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .disabled(model.isScanning(rootURL))
+            .help(L10n.string("directory_manager.rescan_help"))
 
             Button(
               L10n.string("directory_manager.remove"),
