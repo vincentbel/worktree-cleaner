@@ -1,0 +1,8 @@
+{
+  "indentation": {
+    "spaces": 2
+  },
+  "lineLength": 100,
+  "multiElementCollectionTrailingCommas": true,
+  "version": 1
+}
