@@ -483,6 +483,7 @@ private struct WorktreeActionRow: View {
           onRemove(worktree)
         } label: {
           WorktreeActionIcon(systemName: "trash")
+            .foregroundStyle(removalNeedsReview ? .secondary : .primary)
         }
         .buttonStyle(.plain)
         .disabled(isRemovalInProgress)
@@ -503,6 +504,14 @@ private struct WorktreeActionRow: View {
       "删除这个尚未合入的 worktree"
     } else {
       "删除这个 worktree"
+    }
+  }
+
+  private var removalNeedsReview: Bool {
+    if case .unmerged = worktree.cleanupRecommendation.removalKind {
+      true
+    } else {
+      false
     }
   }
 }
@@ -543,7 +552,8 @@ private struct PathActionMenu: View {
         }
       }
     } label: {
-      WorktreeActionIcon(systemName: "arrow.up.forward.app")
+      WorktreeActionIcon(systemName: "ellipsis.circle", pointSize: 17)
+        .foregroundStyle(.primary)
     }
     .menuStyle(.borderlessButton)
     .menuIndicator(.hidden)
@@ -555,12 +565,12 @@ private struct PathActionMenu: View {
 
 private struct WorktreeActionIcon: View {
   let systemName: String
+  var pointSize: CGFloat = 15
 
   var body: some View {
     Image(systemName: systemName)
-      .font(.system(size: 15, weight: .regular))
+      .font(.system(size: pointSize, weight: .regular))
       .symbolRenderingMode(.monochrome)
-      .foregroundStyle(.primary)
       .frame(width: 24, height: 24)
   }
 }
