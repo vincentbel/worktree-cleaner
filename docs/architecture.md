@@ -34,9 +34,10 @@ and disk usage.
 `WorktreeCore.GitWorkspace` is the public seam used by the app and by integration
 tests. Its initial responsibilities are deliberately small:
 
-1. Discover logical Git repositories below a directory.
-2. Produce a complete worktree snapshot for a discovered repository.
-3. Later, perform a preflight check and remove an eligible linked worktree.
+1. Stream logical Git repositories found below a directory.
+2. Produce a Git-state worktree snapshot for a discovered repository.
+3. Stream disk-usage measurements for that snapshot separately.
+4. Perform a preflight check and remove an eligible linked worktree.
 
 Git command execution, output parsing, traversal, bounded concurrency, disk
 measurement, and recommendation rules remain implementation details behind this
@@ -47,15 +48,23 @@ instead of mocking internal collaborators.
 
 The scanner recursively looks for both `.git` directories and `.git` files. Each
 candidate is validated with Git rather than accepted from its filesystem shape
-alone.
+alone. A validated logical repository is emitted immediately; the app updates
+the sidebar without waiting for the rest of the selected directory to finish.
 
-- `git rev-parse --show-toplevel` finds the working-tree root.
+- `git worktree list --porcelain -z` identifies the main working-tree root and
+  validates that the candidate belongs to a registered worktree set.
 - `git rev-parse --git-common-dir` identifies the shared repository metadata.
 - The normalized common Git directory is the logical repository identity. This
   prevents a linked worktree from appearing as a second project in the sidebar.
+- Finding a repository does not stop traversal of its ordinary subdirectories,
+  so nested repositories and submodules remain discoverable.
 - The scanner does not descend into `.git`, does not follow directory symbolic
-  links, and continues after recoverable permission failures.
-- Nested repositories remain discoverable.
+  links, and stops traversing common generated or dependency directories. The
+  skipped names cover Swift/Xcode, Node, Python, Java, Rust, Terraform, CocoaPods,
+  Carthage, vendored dependencies, and common build/cache output.
+- Cancellation stops traversal between filesystem entries. Starting a scan for
+  another root supersedes the previous stream so stale results cannot update the
+  UI.
 
 ## Worktree inspection
 
@@ -68,7 +77,8 @@ Machine-readable Git output is the source of truth:
 
 A worktree snapshot can contain its path, HEAD, branch or detached state, main
 worktree flag, lock/prunable state, tracked and untracked changes, conflicts,
-upstream divergence, disk usage, and cleanup recommendation.
+upstream divergence, and cleanup recommendation. Disk usage is not part of this
+blocking snapshot.
 
 Inspection supplies `--expire now` when listing worktrees so a path deleted by
 another tool remains visible immediately as a prunable Git record. Such a record
@@ -112,7 +122,9 @@ Display working-copy disk usage separately from shared Git data:
 - Worktree size excludes its `.git` entry and includes ignored build products
   and dependency directories.
 - The common Git directory is measured once per logical repository.
-- Measure allocated bytes in a cancellable background task and cache the result.
+- Stream allocated-byte results from a cancellable background task. The UI shows
+  the Git snapshot first and fills each worktree size plus shared Git size as the
+  measurements arrive.
 - A large size can raise recommendation priority but can never make a worktree
   eligible for removal by itself.
 

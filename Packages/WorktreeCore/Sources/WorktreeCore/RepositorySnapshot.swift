@@ -3,7 +3,11 @@ import Foundation
 public struct RepositorySnapshot: Equatable, Sendable {
   public let repository: GitRepository
   public let worktrees: [GitWorktree]
-  public let sharedGitAllocatedBytes: Int64
+}
+
+public enum DiskUsageUpdate: Equatable, Sendable {
+  case worktree(path: URL, allocatedBytes: Int64)
+  case sharedGit(allocatedBytes: Int64)
 }
 
 public struct GitWorktree: Identifiable, Equatable, Sendable {
@@ -20,7 +24,6 @@ public struct GitWorktree: Identifiable, Equatable, Sendable {
   public let prunableReason: String?
   public let status: WorktreeStatus?
   public let cleanupRecommendation: CleanupRecommendation
-  public let allocatedBytes: Int64?
 
   init(
     path: URL,
@@ -33,8 +36,7 @@ public struct GitWorktree: Identifiable, Equatable, Sendable {
     isPrunable: Bool,
     prunableReason: String?,
     status: WorktreeStatus?,
-    cleanupRecommendation: CleanupRecommendation,
-    allocatedBytes: Int64?
+    cleanupRecommendation: CleanupRecommendation
   ) {
     self.path = path
     self.head = head
@@ -47,7 +49,6 @@ public struct GitWorktree: Identifiable, Equatable, Sendable {
     self.prunableReason = prunableReason
     self.status = status
     self.cleanupRecommendation = cleanupRecommendation
-    self.allocatedBytes = allocatedBytes
   }
 }
 

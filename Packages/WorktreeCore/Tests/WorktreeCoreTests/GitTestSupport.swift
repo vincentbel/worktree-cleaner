@@ -1,4 +1,15 @@
 import Foundation
+import WorktreeCore
+
+func collectRepositories(
+  from stream: AsyncThrowingStream<GitRepository, Error>
+) async throws -> [GitRepository] {
+  var repositories: [GitRepository] = []
+  for try await repository in stream {
+    repositories.append(repository)
+  }
+  return repositories
+}
 
 func makeTemporaryDirectory() throws -> URL {
   let directory = FileManager.default.temporaryDirectory

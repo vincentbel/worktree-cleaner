@@ -8,7 +8,9 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     defer { try? FileManager.default.removeItem(at: fixture.base) }
     try configureRemoteDefaultBranch(in: fixture.repository)
     let workspace = GitWorkspace()
-    let repositories = try await workspace.discover(in: fixture.base)
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
     let repository = try XCTUnwrap(repositories.first)
     let initialSnapshot = try await workspace.snapshot(of: repository)
     let linkedWorktree = try XCTUnwrap(
@@ -29,7 +31,9 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     defer { try? FileManager.default.removeItem(at: fixture.base) }
     try configureRemoteDefaultBranch(in: fixture.repository)
     let workspace = GitWorkspace()
-    let repositories = try await workspace.discover(in: fixture.base)
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
     let repository = try XCTUnwrap(repositories.first)
     let initialSnapshot = try await workspace.snapshot(of: repository)
     let linkedWorktree = try XCTUnwrap(

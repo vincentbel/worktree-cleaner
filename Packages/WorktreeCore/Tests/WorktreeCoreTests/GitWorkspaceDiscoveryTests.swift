@@ -14,7 +14,9 @@ final class GitWorkspaceDiscoveryTests: XCTestCase {
     )
     try runGit(["init", "--quiet"], in: repositoryDirectory)
 
-    let repositories = try await GitWorkspace().discover(in: baseDirectory)
+    let repositories = try await collectRepositories(
+      from: GitWorkspace().discover(in: baseDirectory)
+    )
 
     XCTAssertEqual(repositories.count, 1)
     XCTAssertEqual(repositories.first?.name, "sample-project")
@@ -48,12 +50,49 @@ final class GitWorkspaceDiscoveryTests: XCTestCase {
       in: repositoryDirectory
     )
 
-    let repositories = try await GitWorkspace().discover(in: baseDirectory)
+    let repositories = try await collectRepositories(
+      from: GitWorkspace().discover(in: baseDirectory)
+    )
 
     XCTAssertEqual(repositories.count, 1)
     XCTAssertEqual(
       repositories.first?.workingTreeURL,
       repositoryDirectory.resolvingSymlinksInPath()
+    )
+  }
+
+  func testDiscoverContinuesIntoProjectSubdirectoriesButSkipsGeneratedDirectories()
+    async throws
+  {
+    let baseDirectory = try makeTemporaryDirectory()
+    defer { try? FileManager.default.removeItem(at: baseDirectory) }
+
+    try runGit(["init", "--quiet"], in: baseDirectory)
+
+    let nestedRepository = baseDirectory.appending(path: "Sources/NestedProject")
+    try FileManager.default.createDirectory(
+      at: nestedRepository,
+      withIntermediateDirectories: true
+    )
+    try runGit(["init", "--quiet"], in: nestedRepository)
+
+    let generatedRepository = baseDirectory.appending(path: "node_modules/dependency")
+    try FileManager.default.createDirectory(
+      at: generatedRepository,
+      withIntermediateDirectories: true
+    )
+    try runGit(["init", "--quiet"], in: generatedRepository)
+
+    let repositories = try await collectRepositories(
+      from: GitWorkspace().discover(in: baseDirectory)
+    )
+
+    XCTAssertEqual(
+      Set(repositories.map(\.workingTreeURL)),
+      Set([
+        baseDirectory.resolvingSymlinksInPath(),
+        nestedRepository.resolvingSymlinksInPath(),
+      ])
     )
   }
 }

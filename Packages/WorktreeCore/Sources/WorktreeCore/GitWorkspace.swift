@@ -3,17 +3,21 @@ import Foundation
 public struct GitWorkspace: Sendable {
   public init() {}
 
-  public func discover(in baseDirectory: URL) async throws -> [GitRepository] {
-    let candidates = try repositoryCandidates(in: baseDirectory)
-    var repositoriesByCommonDirectory: [URL: GitRepository] = [:]
-
-    for candidate in candidates {
-      let repository = try repository(at: candidate)
-      repositoriesByCommonDirectory[repository.commonGitDirectoryURL] = repository
-    }
-
-    return repositoriesByCommonDirectory.values.sorted {
-      $0.name.localizedStandardCompare($1.name) == .orderedAscending
+  public func discover(
+    in baseDirectory: URL
+  ) -> AsyncThrowingStream<GitRepository, Error> {
+    AsyncThrowingStream { continuation in
+      let task = Task.detached {
+        do {
+          try discoverRepositories(in: baseDirectory) { repository in
+            continuation.yield(repository)
+          }
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+      continuation.onTermination = { _ in task.cancel() }
     }
   }
 
@@ -29,14 +33,40 @@ public struct GitWorkspace: Sendable {
       repository: repository,
       cleanupTarget: cleanupTarget
     )
-    let sharedGitAllocatedBytes = try DiskUsageMeasurer().allocatedSize(
-      of: repository.commonGitDirectoryURL
-    )
     return RepositorySnapshot(
       repository: repository,
-      worktrees: worktrees,
-      sharedGitAllocatedBytes: sharedGitAllocatedBytes
+      worktrees: worktrees
     )
+  }
+
+  public func diskUsage(
+    of snapshot: RepositorySnapshot
+  ) -> AsyncThrowingStream<DiskUsageUpdate, Error> {
+    AsyncThrowingStream { continuation in
+      let task = Task.detached {
+        do {
+          let measurer = DiskUsageMeasurer()
+          for worktree in snapshot.worktrees where !worktree.isPrunable {
+            try Task.checkCancellation()
+            let allocatedBytes = try measurer.allocatedSize(
+              of: worktree.path,
+              excludingImmediateGitEntry: true
+            )
+            continuation.yield(
+              .worktree(path: worktree.path, allocatedBytes: allocatedBytes)
+            )
+          }
+          let sharedGitAllocatedBytes = try measurer.allocatedSize(
+            of: snapshot.repository.commonGitDirectoryURL
+          )
+          continuation.yield(.sharedGit(allocatedBytes: sharedGitAllocatedBytes))
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: error)
+        }
+      }
+      continuation.onTermination = { _ in task.cancel() }
+    }
   }
 
   public func remove(
@@ -62,7 +92,10 @@ public struct GitWorkspace: Sendable {
     return try await snapshot(of: repository)
   }
 
-  private func repositoryCandidates(in baseDirectory: URL) throws -> [URL] {
+  private func discoverRepositories(
+    in baseDirectory: URL,
+    yield: (GitRepository) -> Void
+  ) throws {
     let values = try baseDirectory.resourceValues(forKeys: [.isDirectoryKey])
     guard values.isDirectory == true else {
       throw GitWorkspaceError.notDirectory(baseDirectory)
@@ -82,8 +115,9 @@ public struct GitWorkspace: Sendable {
       throw GitWorkspaceError.cannotEnumerate(baseDirectory)
     }
 
-    var candidates: Set<URL> = []
+    var discoveredCommonDirectories: Set<URL> = []
     while let entry = enumerator.nextObject() as? URL {
+      try Task.checkCancellation()
       let resourceValues = try entry.resourceValues(
         forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
       )
@@ -93,8 +127,18 @@ public struct GitWorkspace: Sendable {
         continue
       }
 
+      if resourceValues.isDirectory == true,
+        Self.skippedDirectoryNames.contains(entry.lastPathComponent)
+      {
+        enumerator.skipDescendants()
+        continue
+      }
+
       guard entry.lastPathComponent == ".git" else { continue }
-      candidates.insert(canonicalURL(entry.deletingLastPathComponent()))
+      let repository = try repository(at: entry.deletingLastPathComponent())
+      if discoveredCommonDirectories.insert(repository.commonGitDirectoryURL).inserted {
+        yield(repository)
+      }
 
       if resourceValues.isDirectory == true {
         enumerator.skipDescendants()
@@ -104,9 +148,34 @@ public struct GitWorkspace: Sendable {
     if let scanError {
       throw scanError
     }
-
-    return candidates.sorted { $0.path < $1.path }
   }
+
+  private static let skippedDirectoryNames: Set<String> = [
+    ".build",
+    ".cache",
+    ".gradle",
+    ".m2",
+    ".next",
+    ".nuxt",
+    ".pnpm-store",
+    ".pytest_cache",
+    ".repo",
+    ".swiftpm",
+    ".terraform",
+    ".tox",
+    ".venv",
+    ".yarn",
+    "Carthage",
+    "DerivedData",
+    "Pods",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+    "target",
+    "venv",
+    "vendor",
+  ]
 
   private func repository(at candidate: URL) throws -> GitRepository {
     let runner = GitCommandRunner()
@@ -158,20 +227,14 @@ public struct GitWorkspace: Sendable {
           let pathExists = FileManager.default.fileExists(atPath: worktreeURL.path)
           isPrunable = isPrunable || !pathExists
           let status: WorktreeStatus?
-          let allocatedBytes: Int64?
           if isPrunable {
             status = nil
-            allocatedBytes = nil
           } else {
             let statusOutput = try GitCommandRunner().runData(
               ["status", "--porcelain=v2", "--branch", "-z"],
               in: worktreeURL
             )
             status = parseStatus(statusOutput)
-            allocatedBytes = try DiskUsageMeasurer().allocatedSize(
-              of: worktreeURL,
-              excludingImmediateGitEntry: true
-            )
           }
           let isMain = worktrees.isEmpty
           worktrees.append(
@@ -196,8 +259,7 @@ public struct GitWorkspace: Sendable {
                 status: status,
                 target: cleanupTarget,
                 repository: repository
-              ),
-              allocatedBytes: allocatedBytes
+              )
             )
           )
         }

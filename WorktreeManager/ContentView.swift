@@ -15,7 +15,9 @@ struct ContentView: View {
       }
       .navigationTitle("项目")
       .overlay {
-        if model.repositories.isEmpty, model.baseDirectoryURL != nil, !model.isScanning {
+        if model.repositories.isEmpty, model.isScanning {
+          ProgressView("正在扫描 Git 项目…")
+        } else if model.repositories.isEmpty, model.baseDirectoryURL != nil {
           ContentUnavailableView(
             "没有找到 Git 项目",
             systemImage: "folder.badge.questionmark",
@@ -40,7 +42,7 @@ struct ContentView: View {
     .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 380)
     .toolbar {
       ToolbarItemGroup {
-        if model.isScanning || model.isLoadingSnapshot {
+        if model.isScanning || model.isLoadingSnapshot || model.isMeasuringDiskUsage {
           ProgressView()
             .controlSize(.small)
         }
@@ -132,7 +134,11 @@ struct ContentView: View {
     } else if let snapshot = model.snapshot,
       snapshot.repository.id == model.selectedRepositoryID
     {
-      WorktreeTable(snapshot: snapshot) { worktree in
+      WorktreeTable(
+        snapshot: snapshot,
+        worktreeAllocatedBytes: model.worktreeAllocatedBytes,
+        sharedGitAllocatedBytes: model.sharedGitAllocatedBytes
+      ) { worktree in
         pendingRemoval = worktree
       }
     } else if model.isScanning || model.isLoadingSnapshot {
@@ -164,6 +170,8 @@ private struct RepositoryRow: View {
 
 private struct WorktreeTable: View {
   let snapshot: RepositorySnapshot
+  let worktreeAllocatedBytes: [URL: Int64]
+  let sharedGitAllocatedBytes: Int64?
   let onRemove: (GitWorktree) -> Void
 
   var body: some View {
@@ -171,11 +179,16 @@ private struct WorktreeTable: View {
       HStack {
         Text("\(snapshot.worktrees.count) 个 worktree")
         Spacer()
-        Label(
-          "共享 Git 数据 \(formattedBytes(snapshot.sharedGitAllocatedBytes))",
-          systemImage: "externaldrive"
-        )
-        .foregroundStyle(.secondary)
+        if let sharedGitAllocatedBytes {
+          Label(
+            "共享 Git 数据 \(formattedBytes(sharedGitAllocatedBytes))",
+            systemImage: "externaldrive"
+          )
+          .foregroundStyle(.secondary)
+        } else {
+          Label("正在计算共享 Git 数据…", systemImage: "externaldrive")
+            .foregroundStyle(.secondary)
+        }
       }
       .font(.callout)
       .padding(.horizontal)
@@ -207,7 +220,7 @@ private struct WorktreeTable: View {
         .width(min: 110, ideal: 140)
 
         TableColumn("占用空间") { worktree in
-          DiskUsageLabel(allocatedBytes: worktree.allocatedBytes)
+          DiskUsageLabel(allocatedBytes: worktreeAllocatedBytes[worktree.id])
         }
         .width(min: 90, ideal: 110)
 

@@ -7,7 +7,9 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     let fixture = try makeRepositoryWithLinkedWorktree()
     defer { try? FileManager.default.removeItem(at: fixture.base) }
     let workspace = GitWorkspace()
-    let repositories = try await workspace.discover(in: fixture.base)
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
     let repository = try XCTUnwrap(repositories.first)
 
     let snapshot = try await workspace.snapshot(of: repository)
@@ -31,7 +33,9 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
       to: fixture.linkedWorktree.appending(path: "notes.txt")
     )
     let workspace = GitWorkspace()
-    let repositories = try await workspace.discover(in: fixture.base)
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
     let repository = try XCTUnwrap(repositories.first)
 
     let snapshot = try await workspace.snapshot(of: repository)
@@ -55,7 +59,9 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
       in: fixture.repository
     )
     let workspace = GitWorkspace()
-    let repositories = try await workspace.discover(in: fixture.base)
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
     let repository = try XCTUnwrap(repositories.first)
 
     let snapshot = try await workspace.snapshot(of: repository)
@@ -72,7 +78,9 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     defer { try? FileManager.default.removeItem(at: fixture.base) }
     try configureRemoteDefaultBranch(in: fixture.repository)
     let workspace = GitWorkspace()
-    let repositories = try await workspace.discover(in: fixture.base)
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
     let repository = try XCTUnwrap(repositories.first)
 
     let snapshot = try await workspace.snapshot(of: repository)
@@ -86,23 +94,36 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     )
   }
 
-  func testSnapshotReportsAllocatedDiskUsage() async throws {
+  func testDiskUsageStreamsWorktreeAndSharedGitMeasurements() async throws {
     let fixture = try makeRepositoryWithLinkedWorktree()
     defer { try? FileManager.default.removeItem(at: fixture.base) }
     try Data(repeating: 0xA5, count: 4_096).write(
       to: fixture.linkedWorktree.appending(path: "generated.bin")
     )
     let workspace = GitWorkspace()
-    let repositories = try await workspace.discover(in: fixture.base)
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
     let repository = try XCTUnwrap(repositories.first)
 
     let snapshot = try await workspace.snapshot(of: repository)
+    var worktreeUsage: [URL: Int64] = [:]
+    var sharedGitUsage: Int64?
 
-    let linkedWorktree = try XCTUnwrap(
-      snapshot.worktrees.first { !$0.isMain }
+    for try await update in workspace.diskUsage(of: snapshot) {
+      switch update {
+      case .worktree(let path, let allocatedBytes):
+        worktreeUsage[path] = allocatedBytes
+      case .sharedGit(let allocatedBytes):
+        sharedGitUsage = allocatedBytes
+      }
+    }
+
+    XCTAssertGreaterThanOrEqual(
+      try XCTUnwrap(worktreeUsage[fixture.linkedWorktree.resolvingSymlinksInPath()]),
+      4_096
     )
-    XCTAssertGreaterThanOrEqual(try XCTUnwrap(linkedWorktree.allocatedBytes), 4_096)
-    XCTAssertGreaterThan(snapshot.sharedGitAllocatedBytes, 0)
+    XCTAssertGreaterThan(try XCTUnwrap(sharedGitUsage), 0)
   }
 
   func testSnapshotKeepsMissingWorktreeAsPrunableRecord() async throws {
@@ -110,7 +131,9 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     defer { try? FileManager.default.removeItem(at: fixture.base) }
     try FileManager.default.removeItem(at: fixture.linkedWorktree)
     let workspace = GitWorkspace()
-    let repositories = try await workspace.discover(in: fixture.base)
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
     let repository = try XCTUnwrap(repositories.first)
 
     let snapshot = try await workspace.snapshot(of: repository)
@@ -121,6 +144,5 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     XCTAssertTrue(missingWorktree.isPrunable)
     XCTAssertNotNil(missingWorktree.prunableReason)
     XCTAssertNil(missingWorktree.status)
-    XCTAssertNil(missingWorktree.allocatedBytes)
   }
 }

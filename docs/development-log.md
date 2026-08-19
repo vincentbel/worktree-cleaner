@@ -39,3 +39,19 @@ instead.
   a final preflight, accepts only a current `cleanable` recommendation, invokes
   `git worktree remove` without force, preserves the branch, and returns a fresh
   snapshot.
+- The first discovery implementation accumulated every `.git` candidate before
+  publishing any result and descended into dependency/build output. On large
+  development roots this could leave the window empty for over a minute.
+  Discovery now streams each validated logical repository immediately and
+  prunes common generated, dependency, cache, and build directories.
+- A discovered Git repository does not terminate traversal: ordinary child
+  directories are still scanned so nested repositories and submodules appear.
+  Only `.git` metadata, symbolic links, and the explicit generated-directory
+  name set are pruned.
+- Disk traversal no longer blocks the initial repository snapshot. Worktree and
+  shared Git allocated-byte results are delivered as a second stream and update
+  the detail table incrementally. Switching roots or repositories invalidates
+  stale scan, snapshot, and disk results.
+- The host Xcode installation now completes the command-line macOS application
+  build successfully; the earlier `IDESimulatorFoundation` issue is no longer a
+  current local blocker.
