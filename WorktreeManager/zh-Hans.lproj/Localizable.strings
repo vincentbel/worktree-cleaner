@@ -32,6 +32,8 @@
 
 "table.shared_git_data" = "共享 Git 数据 %@";
 "table.calculating_shared_git" = "正在计算共享 Git 数据…";
+"table.calculating_disk_usage" = "正在计算磁盘占用…";
+"table.disk_usage_measured_at" = "上次计算：%@";
 "column.worktree" = "Worktree";
 "column.status" = "状态";
 "column.disk_usage" = "占用空间";
@@ -48,6 +50,7 @@
 "action.open_with" = "使用 %@ 打开";
 "action.path_menu.help" = "复制路径或选择打开方式";
 "action.path_menu.label" = "路径操作";
+"action.recalculate_disk_usage" = "重新计算磁盘占用";
 
 "disk.large_help" = "占用超过 5 GB，建议检查";
 "status.missing_path" = "路径缺失";

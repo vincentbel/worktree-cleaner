@@ -32,6 +32,8 @@
 
 "table.shared_git_data" = "Shared Git data %@";
 "table.calculating_shared_git" = "Calculating shared Git data…";
+"table.calculating_disk_usage" = "Calculating disk usage…";
+"table.disk_usage_measured_at" = "Last calculated %@";
 "column.worktree" = "Worktree";
 "column.status" = "Status";
 "column.disk_usage" = "Disk Usage";
@@ -48,6 +50,7 @@
 "action.open_with" = "Open with %@";
 "action.path_menu.help" = "Copy the path or choose how to open it";
 "action.path_menu.label" = "Path Actions";
+"action.recalculate_disk_usage" = "Recalculate Disk Usage";
 
 "disk.large_help" = "Uses more than 5 GB; consider reviewing it";
 "status.missing_path" = "Path missing";

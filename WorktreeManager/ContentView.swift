@@ -71,7 +71,7 @@ struct ContentView: View {
     .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 380)
     .toolbar {
       ToolbarItemGroup {
-        if model.isScanning || model.isLoadingSnapshot || model.isMeasuringDiskUsage {
+        if model.isScanning || model.isLoadingSnapshot {
           ProgressView()
             .controlSize(.small)
             .padding(.leading, 6)
@@ -172,8 +172,7 @@ struct ContentView: View {
       get: { model.selectedRepositoryID },
       set: { repositoryID in
         guard model.selectedRepositoryID != repositoryID else { return }
-        model.selectedRepositoryID = repositoryID
-        Task { await model.loadSelectedRepository() }
+        Task { await model.selectRepository(repositoryID) }
       }
     )
   }
@@ -198,7 +197,11 @@ struct ContentView: View {
         snapshot: snapshot,
         worktreeAllocatedBytes: model.worktreeAllocatedBytes,
         sharedGitAllocatedBytes: model.sharedGitAllocatedBytes,
+        diskUsageMeasuredAt: model.diskUsageMeasuredAt,
+        isMeasuringDiskUsage: model.isMeasuringDiskUsage,
+        isDiskUsageRefreshDisabled: model.isLoadingSnapshot || model.isMeasuringDiskUsage,
         removingWorktreeID: model.removingWorktreeID,
+        onRecalculateDiskUsage: { model.recalculateDiskUsage() },
         onMessage: { model.showTransientMessage($0) },
         onError: { model.errorMessage = $0 },
         onRemove: { pendingRemoval = $0 }
@@ -295,7 +298,11 @@ private struct WorktreeTable: View {
   let snapshot: RepositorySnapshot
   let worktreeAllocatedBytes: [URL: Int64]
   let sharedGitAllocatedBytes: Int64?
+  let diskUsageMeasuredAt: Date?
+  let isMeasuringDiskUsage: Bool
+  let isDiskUsageRefreshDisabled: Bool
   let removingWorktreeID: GitWorktree.ID?
+  let onRecalculateDiskUsage: () -> Void
   let onMessage: (String) -> Void
   let onError: (String) -> Void
   let onRemove: (GitWorktree) -> Void
@@ -315,6 +322,28 @@ private struct WorktreeTable: View {
           Label(L10n.string("table.calculating_shared_git"), systemImage: "externaldrive")
             .foregroundStyle(.secondary)
         }
+        if isMeasuringDiskUsage {
+          ProgressView()
+            .controlSize(.small)
+            .accessibilityLabel(L10n.string("table.calculating_disk_usage"))
+        }
+        if let diskUsageMeasuredAt {
+          Text(
+            L10n.format(
+              "table.disk_usage_measured_at",
+              formattedMeasurementDate(diskUsageMeasuredAt)
+            )
+          )
+          .font(.caption)
+          .foregroundStyle(.tertiary)
+          .lineLimit(1)
+        }
+        Button(action: onRecalculateDiskUsage) {
+          Image(systemName: "arrow.clockwise")
+        }
+        .buttonStyle(.borderless)
+        .disabled(isDiskUsageRefreshDisabled)
+        .help(L10n.string("action.recalculate_disk_usage"))
       }
       .font(.callout)
       .padding(.horizontal)
@@ -332,7 +361,8 @@ private struct WorktreeTable: View {
                   index, worktree in
                   WorktreeGridRow(
                     worktree: worktree,
-                    allocatedBytes: worktreeAllocatedBytes[worktree.id]
+                    allocatedBytes: worktreeAllocatedBytes[worktree.id],
+                    isMeasuringDiskUsage: isMeasuringDiskUsage
                   )
                   .background(rowBackground(at: index))
                   .overlay(alignment: .bottom) { Divider() }
@@ -426,6 +456,7 @@ private struct WorktreeGridHeader: View {
 private struct WorktreeGridRow: View {
   let worktree: GitWorktree
   let allocatedBytes: Int64?
+  let isMeasuringDiskUsage: Bool
 
   var body: some View {
     HStack(spacing: 0) {
@@ -451,7 +482,10 @@ private struct WorktreeGridRow: View {
       }
 
       GridCell(width: WorktreeGridMetrics.diskWidth) {
-        DiskUsageLabel(allocatedBytes: allocatedBytes)
+        DiskUsageLabel(
+          allocatedBytes: allocatedBytes,
+          isMeasuring: isMeasuringDiskUsage
+        )
       }
 
       GridCell(width: WorktreeGridMetrics.recommendationWidth) {
@@ -604,6 +638,7 @@ private struct DiskUsageLabel: View {
   private static let largeWorktreeThreshold: Int64 = 5_000_000_000
 
   let allocatedBytes: Int64?
+  let isMeasuring: Bool
 
   var body: some View {
     if let allocatedBytes {
@@ -614,11 +649,25 @@ private struct DiskUsageLabel: View {
         .help(
           allocatedBytes >= Self.largeWorktreeThreshold ? L10n.string("disk.large_help") : ""
         )
+    } else if isMeasuring {
+      ProgressView()
+        .controlSize(.small)
+        .accessibilityLabel(L10n.string("table.calculating_disk_usage"))
     } else {
       Text("—")
         .foregroundStyle(.tertiary)
     }
   }
+}
+
+private func formattedMeasurementDate(_ date: Date) -> String {
+  date.formatted(
+    .dateTime
+      .month(.abbreviated)
+      .day()
+      .hour()
+      .minute()
+  )
 }
 
 private struct StatusLabel: View {

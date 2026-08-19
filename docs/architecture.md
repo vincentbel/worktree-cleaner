@@ -22,8 +22,9 @@ and disk usage.
   libgit2.
 - Keep UI state in a small `@Observable`, `@MainActor` store. Do not introduce a
   third-party state-management framework.
-- Persist only user choices such as the selected root. Repository and worktree
-  state is derived by scanning, so the first version does not need a database.
+- Persist the selected root plus a small, discardable cache of repository paths,
+  the last selection, and disk-usage measurements in `UserDefaults`. Git status
+  remains derived at runtime, so the first version does not need a database.
 - Distribute the first version with Developer ID signing and notarization, with
   App Sandbox disabled. This allows a repository below the selected root to
   reference registered worktrees outside that root.
@@ -135,6 +136,12 @@ Display working-copy disk usage separately from shared Git data:
 - Stream allocated-byte results from a cancellable background task. The UI shows
   the Git snapshot first and fills each worktree size plus shared Git size as the
   measurements arrive.
+- Reuse a complete disk-usage measurement for up to seven days. Display its
+  timestamp, remeasure when it expires or a new worktree has no cached value,
+  and let the user explicitly request an earlier recalculation.
+- Persist disk usage separately from Git status. Switching projects or restarting
+  the app may refresh Git status in the background without traversing every file
+  again; removal still invalidates the affected repository's disk cache.
 - A large size can raise recommendation priority but can never make a worktree
   eligible for removal by itself.
 
@@ -162,6 +169,12 @@ The primary window uses a two-column `NavigationSplitView`:
   operation results continue to use explicit feedback because they warrant more
   attention.
 - Toolbar: choose root, rescan, and later refresh remote refs explicitly.
+
+The sidebar restores its cached repository list and last selection immediately,
+then reconciles them with a progressive background scan. Worktree snapshots are
+cached only in memory so revisiting a project can show its previous state while
+Git status refreshes. Disk measurement progress stays in the detail area and is
+not treated as a blocking window-level load.
 
 Long-running scans and inspections are asynchronous, cancellable, and never run
 on the main actor.

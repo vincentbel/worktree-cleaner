@@ -1,6 +1,6 @@
 import Foundation
 
-public struct GitRepository: Identifiable, Hashable, Sendable {
+public struct GitRepository: Codable, Identifiable, Hashable, Sendable {
   public var id: URL { commonGitDirectoryURL }
   public var name: String { workingTreeURL.lastPathComponent }
 
@@ -8,7 +8,7 @@ public struct GitRepository: Identifiable, Hashable, Sendable {
   public let commonGitDirectoryURL: URL
   public let linkedWorktreeCount: Int
 
-  init(
+  public init(
     workingTreeURL: URL,
     commonGitDirectoryURL: URL,
     linkedWorktreeCount: Int

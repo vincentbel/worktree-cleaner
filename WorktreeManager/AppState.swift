@@ -13,6 +13,7 @@ final class AppState {
   var snapshot: RepositorySnapshot?
   var worktreeAllocatedBytes: [URL: Int64] = [:]
   var sharedGitAllocatedBytes: Int64?
+  var diskUsageMeasuredAt: Date?
   var isScanning = false
   var isLoadingSnapshot = false
   var isMeasuringDiskUsage = false
@@ -23,11 +24,14 @@ final class AppState {
 
   private let workspace: GitWorkspace
   private let defaults: UserDefaults
+  private let cacheStore: WorkspaceCacheStore
   private var didRestore = false
   private var activeScanID: UUID?
   private var activeSnapshotLoadID: UUID?
   private var diskUsageTask: Task<Void, Never>?
   private var transientMessageTask: Task<Void, Never>?
+  private var snapshotsByRepositoryID: [GitRepository.ID: RepositorySnapshot] = [:]
+  private var diskUsageCache: [GitRepository.ID: DiskUsageCacheEntry] = [:]
 
   init(
     workspace: GitWorkspace = GitWorkspace(),
@@ -35,6 +39,7 @@ final class AppState {
   ) {
     self.workspace = workspace
     self.defaults = defaults
+    self.cacheStore = WorkspaceCacheStore(defaults: defaults)
   }
 
   func restoreSelectedDirectory() async {
@@ -42,8 +47,26 @@ final class AppState {
     didRestore = true
     guard let path = defaults.string(forKey: Self.baseDirectoryKey) else { return }
 
-    baseDirectoryURL = URL(filePath: path, directoryHint: .isDirectory)
-    await scan()
+    let restoredDirectoryURL = URL(filePath: path, directoryHint: .isDirectory)
+    baseDirectoryURL = restoredDirectoryURL
+    let restoredCache = cacheStore.load(for: restoredDirectoryURL)
+    if let restoredCache {
+      repositories = restoredCache.repositories.sorted {
+        $0.name.localizedStandardCompare($1.name) == .orderedAscending
+      }
+      for entry in restoredCache.diskUsageEntries {
+        diskUsageCache[entry.repositoryID] = entry
+      }
+      if repositories.contains(where: { $0.id == restoredCache.selectedRepositoryID }) {
+        selectedRepositoryID = restoredCache.selectedRepositoryID
+      } else {
+        selectedRepositoryID = repositories.first?.id
+      }
+      if selectedRepositoryID != nil {
+        Task { await loadSelectedRepository() }
+      }
+    }
+    await scan(refreshSelectedRepository: restoredCache == nil)
   }
 
   func chooseDirectory(_ url: URL) async {
@@ -56,19 +79,23 @@ final class AppState {
     activeScanID = nil
     activeSnapshotLoadID = nil
     diskUsageTask?.cancel()
+    cacheStore.remove()
     transientMessageTask?.cancel()
     repositories = []
     selectedRepositoryID = nil
     snapshot = nil
+    snapshotsByRepositoryID = [:]
+    diskUsageCache = [:]
     worktreeAllocatedBytes = [:]
     sharedGitAllocatedBytes = nil
+    diskUsageMeasuredAt = nil
     isLoadingSnapshot = false
     isMeasuringDiskUsage = false
     transientMessage = nil
     await scan()
   }
 
-  func scan() async {
+  func scan(refreshSelectedRepository: Bool = true) async {
     guard let baseDirectoryURL else { return }
 
     let scanID = UUID()
@@ -105,17 +132,27 @@ final class AppState {
 
       guard activeScanID == scanID else { return }
       repositories.removeAll { !discoveredRepositoryIDs.contains($0.id) }
+      var selectionChanged = false
       if !repositories.contains(where: { $0.id == selectedRepositoryID }) {
         selectedRepositoryID = repositories.first?.id
         startedInitialLoad = false
+        selectionChanged = true
       }
-      if !startedInitialLoad {
+      persistWorkspaceCache()
+      if !startedInitialLoad, refreshSelectedRepository || selectionChanged {
         await loadSelectedRepository()
       }
     } catch {
       guard activeScanID == scanID else { return }
       errorMessage = error.localizedDescription
     }
+  }
+
+  func selectRepository(_ repositoryID: GitRepository.ID?) async {
+    guard selectedRepositoryID != repositoryID else { return }
+    selectedRepositoryID = repositoryID
+    persistWorkspaceCache()
+    await loadSelectedRepository()
   }
 
   func loadSelectedRepository() async {
@@ -128,6 +165,7 @@ final class AppState {
       diskUsageTask?.cancel()
       worktreeAllocatedBytes = [:]
       sharedGitAllocatedBytes = nil
+      diskUsageMeasuredAt = nil
       isLoadingSnapshot = false
       isMeasuringDiskUsage = false
       return
@@ -136,8 +174,8 @@ final class AppState {
     let loadID = UUID()
     activeSnapshotLoadID = loadID
     diskUsageTask?.cancel()
-    worktreeAllocatedBytes = [:]
-    sharedGitAllocatedBytes = nil
+    snapshot = snapshotsByRepositoryID[selectedRepositoryID]
+    applyCachedDiskUsage(for: selectedRepositoryID)
     isMeasuringDiskUsage = false
     isLoadingSnapshot = true
     defer {
@@ -152,12 +190,32 @@ final class AppState {
         selectedRepositoryID == repository.id
       else { return }
       updateRepository(loadedSnapshot.repository)
+      snapshotsByRepositoryID[repository.id] = loadedSnapshot
       snapshot = loadedSnapshot
-      startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
+      applyCachedDiskUsage(for: repository.id)
+      persistWorkspaceCache()
+      if diskUsageCache[repository.id]?.isReusable(for: loadedSnapshot) != true {
+        startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
+      }
     } catch {
       guard activeSnapshotLoadID == loadID else { return }
       errorMessage = error.localizedDescription
     }
+  }
+
+  func recalculateDiskUsage() {
+    guard let snapshot,
+      snapshot.repository.id == selectedRepositoryID,
+      !isLoadingSnapshot,
+      !isMeasuringDiskUsage
+    else {
+      return
+    }
+
+    let loadID = UUID()
+    activeSnapshotLoadID = loadID
+    diskUsageTask?.cancel()
+    startMeasuringDiskUsage(for: snapshot, loadID: loadID)
   }
 
   func remove(_ worktree: GitWorktree) async {
@@ -188,9 +246,13 @@ final class AppState {
         selectedRepositoryID == repository.id
       else { return }
       updateRepository(loadedSnapshot.repository)
+      snapshotsByRepositoryID[repository.id] = loadedSnapshot
       snapshot = loadedSnapshot
+      diskUsageCache[repository.id] = nil
       worktreeAllocatedBytes = [:]
       sharedGitAllocatedBytes = nil
+      diskUsageMeasuredAt = nil
+      persistWorkspaceCache()
       startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
       if let branch = worktree.branch {
         successMessage = L10n.format(
@@ -231,6 +293,30 @@ final class AppState {
     repositories[index] = repository
   }
 
+  private func applyCachedDiskUsage(for repositoryID: GitRepository.ID) {
+    guard let cache = diskUsageCache[repositoryID] else {
+      worktreeAllocatedBytes = [:]
+      sharedGitAllocatedBytes = nil
+      diskUsageMeasuredAt = nil
+      return
+    }
+    worktreeAllocatedBytes = cache.worktreeAllocatedBytes
+    sharedGitAllocatedBytes = cache.sharedGitAllocatedBytes
+    diskUsageMeasuredAt = cache.measuredAt
+  }
+
+  private func persistWorkspaceCache() {
+    guard let baseDirectoryURL else { return }
+    cacheStore.save(
+      WorkspaceCache(
+        baseDirectoryURL: baseDirectoryURL,
+        repositories: repositories,
+        selectedRepositoryID: selectedRepositoryID,
+        diskUsageEntries: Array(diskUsageCache.values)
+      )
+    )
+  }
+
   private func startMeasuringDiskUsage(
     for snapshot: RepositorySnapshot,
     loadID: UUID
@@ -244,15 +330,35 @@ final class AppState {
       }
 
       do {
+        var measuredWorktrees: [URL: Int64] = [:]
+        var measuredSharedGit: Int64?
         for try await update in workspace.diskUsage(of: snapshot) {
           guard activeSnapshotLoadID == loadID else { return }
           switch update {
           case .worktree(let path, let allocatedBytes):
+            measuredWorktrees[path] = allocatedBytes
             worktreeAllocatedBytes[path] = allocatedBytes
           case .sharedGit(let allocatedBytes):
+            measuredSharedGit = allocatedBytes
             sharedGitAllocatedBytes = allocatedBytes
           }
         }
+        guard activeSnapshotLoadID == loadID,
+          let measuredSharedGit
+        else {
+          return
+        }
+        let cache = DiskUsageCacheEntry(
+          repositoryID: snapshot.repository.id,
+          measuredAt: Date(),
+          worktreeAllocatedBytes: measuredWorktrees,
+          sharedGitAllocatedBytes: measuredSharedGit
+        )
+        diskUsageCache[snapshot.repository.id] = cache
+        worktreeAllocatedBytes = measuredWorktrees
+        sharedGitAllocatedBytes = measuredSharedGit
+        diskUsageMeasuredAt = cache.measuredAt
+        persistWorkspaceCache()
       } catch is CancellationError {
         return
       } catch {

@@ -90,3 +90,12 @@ instead.
   strings dictionaries for correct English singular forms. Because the app
   target defaults to `MainActor`, bundle lookup helpers used by nonisolated
   `LocalizedError` requirements must also be explicitly `nonisolated`.
+- Startup and project navigation now use stale-while-revalidate behavior. A
+  persisted repository list and last selection render immediately while the
+  recursive scan reconciles them; in-memory snapshots render immediately when
+  revisiting a project while Git status refreshes in the background.
+- Disk traversal is cached independently for seven days because its result does
+  not need Git-status freshness. The UI shows the measurement time and offers an
+  explicit recalculation button. New worktrees, expiry, and successful removal
+  trigger a fresh measurement; deletion safety still performs a live Git
+  preflight and never relies on cached status.
