@@ -137,10 +137,12 @@ struct OpenTargetService {
   private static let detectedTargets: [OpenTarget] = definitions.compactMap { definition in
     guard let applicationURL = firstExistingApplication(in: definition.applicationPaths)
     else { return nil }
+    let icon = NSWorkspace.shared.icon(forFile: applicationURL.path)
+    icon.size = NSSize(width: 20, height: 20)
     return OpenTarget(
       id: definition.id,
       label: definition.label,
-      icon: NSWorkspace.shared.icon(forFile: applicationURL.path),
+      icon: icon,
       action: definition.isFinder ? .finder : .application(applicationURL)
     )
   }

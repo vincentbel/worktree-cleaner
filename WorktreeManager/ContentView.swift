@@ -259,7 +259,7 @@ private struct RepositoryRow: View {
           systemImage: "square.stack.3d.up.fill"
         )
         .font(.caption.monospacedDigit())
-        .foregroundStyle(.tint)
+        .foregroundStyle(.primary)
         .help("\(repository.linkedWorktreeCount) 个额外 worktree")
       } else {
         Text("无额外")
@@ -371,7 +371,7 @@ private struct WorktreeTable: View {
 private enum WorktreeGridMetrics {
   static let headerHeight: CGFloat = 30
   static let rowHeight: CGFloat = 52
-  static let worktreeWidth: CGFloat = 180
+  static let worktreeWidth: CGFloat = 260
   static let statusWidth: CGFloat = 140
   static let diskWidth: CGFloat = 110
   static let recommendationWidth: CGFloat = 240
@@ -482,7 +482,7 @@ private struct WorktreeActionRow: View {
         Button {
           onRemove(worktree)
         } label: {
-          WorktreeActionIcon(systemName: "trash")
+          WorktreeActionIcon(systemName: "trash", pointSize: 13)
             .foregroundStyle(removalNeedsReview ? .secondary : .primary)
         }
         .buttonStyle(.plain)

@@ -77,3 +77,8 @@ instead.
 - Path copying now uses a non-blocking 1.5-second toast instead of an alert that
   requires another click. The sidebar grouping and muted styling were verified
   in the running native app.
+- The worktree grid remains custom so its action column can stay fixed while data
+  columns scroll. Resizable data columns are feasible by adding header drag
+  handles and persisted width state; switching to SwiftUI `Table` would work
+  against the fixed-action-column requirement. The Worktree column currently
+  defaults to 260 points.
