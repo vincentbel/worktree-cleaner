@@ -489,7 +489,7 @@ private struct RepositoryRow: View {
         }
       }
       .font(.caption.monospacedDigit())
-      .foregroundStyle(.primary)
+      .foregroundStyle(.secondary)
       .lineLimit(1)
     }
     .padding(.vertical, 3)
