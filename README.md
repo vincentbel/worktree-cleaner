@@ -21,8 +21,8 @@ measures disk usage, and helps you decide what can be removed.
   cleanup recommendations.
 - **🚀 Quick path actions**: Open a worktree in Finder or an installed editor or
   terminal, or copy its path.
-- **🧹 Safe cleanup**: Remove eligible linked worktrees while preserving their Git
-  branches.
+- **🧹 Safe cleanup**: Remove one or multiple eligible linked worktrees while
+  preserving their Git branches.
 - **🧾 Stale registration cleanup**: Clean up Git worktree registrations for
   directories that no longer exist.
 - **💾 Efficient disk insights**: Cache disk-usage results while refreshing Git
@@ -36,8 +36,10 @@ Worktree Cleaner is deliberately conservative:
 
 - It rechecks the current Git state immediately before removing a worktree.
 - It never uses forced removal and never deletes a branch as a side effect.
-- Main, dirty, locked, and otherwise unsafe worktrees are blocked from removal.
-- Clean worktrees with unmerged commits require an explicit, stronger confirmation.
+- Main, dirty, locked, and otherwise unsafe worktrees are blocked from cleanup.
+- A clean worktree with unmerged commits can be cleaned up when a branch keeps
+  those commits reachable. An unmerged detached HEAD is blocked until a branch
+  is created for it.
 - Recommendations are based on local Git state and should still be reviewed before
   deletion.
 
@@ -60,7 +62,7 @@ Worktree Cleaner requires macOS 14 or later and a Git installation available at
    its work is no longer needed.
 
 Adding a scan directory does not modify its contents. Worktree Cleaner only changes
-files when you explicitly confirm a worktree removal.
+files when you explicitly confirm a worktree cleanup.
 
 ## Project documentation
 

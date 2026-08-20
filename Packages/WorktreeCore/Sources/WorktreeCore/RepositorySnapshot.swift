@@ -68,6 +68,7 @@ public enum CleanupBlocker: Equatable, Sendable {
 public enum CleanupReviewReason: Equatable, Sendable {
   case cleanupTargetUnavailable
   case notMerged(target: String)
+  case detachedHeadNotMerged(target: String)
 }
 
 public struct WorktreeStatus: Equatable, Sendable {

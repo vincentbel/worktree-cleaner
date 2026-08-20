@@ -1,8 +1,16 @@
+import AppKit
 import Sparkle
 import SwiftUI
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+  func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+    true
+  }
+}
+
 @main
 struct WorktreeCleanerApp: App {
+  @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
   @State private var model = AppState()
 
   private let updaterController = SPUStandardUpdaterController(

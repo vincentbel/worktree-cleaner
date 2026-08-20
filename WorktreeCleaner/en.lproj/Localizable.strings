@@ -42,21 +42,19 @@
 "error.directory_duplicate" = "This directory is already included: %@";
 "error.directory_overlap" = "This directory overlaps an existing scan directory: %@";
 
-"removal.confirm.title" = "Delete this worktree?";
-"removal.unmerged.title" = "Not merged into %@. Delete anyway?";
-"removal.unmerged.button" = "Delete Unmerged Worktree";
-"removal.permanent.button" = "Delete Worktree Permanently";
-"removal.branch_preserved" = "The Git branch %@ will be kept.";
-"removal.detached_warning" = "This worktree has a detached HEAD. Its commits may be difficult to recover after deletion; record commit %@ first.";
-"removal.unmerged.message" = "This worktree's commits have not been merged into %@. Deleting the directory cannot be undone. %@ The working tree will be checked again before deletion.\n\n%@";
-"removal.confirm.message" = "Git will delete this directory. This cannot be undone, but the branch will not be deleted. Git status will be checked again before deletion.\n\n%@";
-"success.removed_branch" = "Deleted %@. Branch %@ was kept.";
-"success.removed_detached" = "Deleted %@. The worktree had a detached HEAD.";
+"removal.confirm.title" = "Clean Up This Worktree?";
+"removal.unmerged.title" = "This Worktree Has Not Been Merged into the Main Branch (%@)";
+"removal.unmerged.button" = "Clean Up Anyway";
+"removal.permanent.button" = "Clean Up Worktree";
+"removal.unmerged.message" = "Cleanup only removes the Worktree directory. The corresponding branch and all committed code will remain, so you can switch back to that branch at any time.\n\nDirectory: %@";
+"removal.confirm.message" = "Cleanup only removes the Worktree directory. It does not delete any Git branches, and the code is already available from the main branch.\n\nDirectory: %@";
+"success.removed_branch" = "Cleaned up %@. Branch %@ was kept.";
+"success.removed_detached" = "Cleaned up %@. The Worktree had a detached HEAD.";
 "success.pruned_registrations" = "Removed all stale worktree registrations in this repository. Branches and existing files were not changed.";
 
-"prune.confirm.title" = "Clean Up Stale Worktree Registrations?";
-"prune.confirm.button" = "Clean Up Registrations";
-"prune.confirm.message" = "This directory no longer exists and only its Git worktree registration remains:\n\n%@\n\nGit will remove all stale, unlocked worktree registrations in this repository. This does not delete branches or any files that still exist.";
+"prune.confirm.title" = "Clean Up Leftover Worktree Records?";
+"prune.confirm.button" = "Clean Up Records";
+"prune.confirm.message" = "This Worktree directory no longer exists, leaving only an invalid Git record:\n\n%@\n\nCleanup removes every unlocked invalid Worktree record in this repository. It does not delete branches or any files that still exist.";
 
 "table.shared_git_data" = "Shared Git data %@";
 "table.calculating_shared_git" = "Calculating shared Git data…";
@@ -70,11 +68,13 @@
 "column.actions" = "Actions";
 "worktree.main" = "Main worktree";
 
-"action.delete" = "Delete";
-"action.delete.unmerged_help" = "Delete this unmerged worktree";
-"action.delete.help" = "Delete this worktree";
-"action.prune_registration" = "Clean Up Registration";
-"action.prune_registration.help" = "Remove stale Git worktree registrations; branches and existing files are kept";
+"action.delete" = "Clean Up";
+"action.batch_cleanup" = "Clean Up Selected…";
+"action.batch_cleanup.help" = "Remove the selected Worktree directories without deleting their Git branches";
+"action.delete.unmerged_help" = "Clean up this Worktree that has not been merged into the main branch; its branch and committed code will be kept";
+"action.delete.help" = "Clean up this Worktree directory without deleting Git branches";
+"action.prune_registration" = "Clean Up Leftover Record";
+"action.prune_registration.help" = "Clean up invalid Git Worktree records without deleting branches or existing files";
 "action.path_copied" = "Path copied";
 "action.copy_path" = "Copy Path";
 "action.open_with" = "Open with %@";
@@ -83,21 +83,46 @@
 "action.recalculate_disk_usage.short" = "Recalculate";
 "action.recalculate_disk_usage" = "Recalculate Disk Usage";
 
+"batch.confirm.subtitle" = "None of the selected Worktrees have uncommitted changes. Cleanup only removes their Worktree directories; it does not delete Git branches.";
+"batch.confirm.breakdown.title" = "Selected Worktrees";
+"batch.confirm.breakdown.merged" = "Merged into the main branch";
+"batch.confirm.breakdown.merged.detail" = "The code is already available from the main branch";
+"batch.confirm.breakdown.unmerged" = "Not merged into the main branch";
+"batch.confirm.breakdown.unmerged.detail" = "The corresponding branches and committed code will be kept";
+"batch.selected_count" = "%d selected";
+"batch.select_all.label" = "Select All Removable Worktrees";
+"batch.select_all.help" = "Select or deselect all removable worktrees, including unmerged ones";
+"batch.select_worktree.label" = "Select %@ for batch cleanup";
+"batch.progress" = "Cleaning %d of %d…";
+"batch.result.failure" = "%@: %@";
+"batch.result.success" = "%@. No branches were deleted.";
+"batch.result.partial" = "%@; %@. No branches were deleted.\n\n%@";
+
 "disk.large_help" = "Uses more than 5 GB; consider reviewing it";
-"status.missing_path" = "Directory no longer exists";
+"status.missing_path" = "Worktree directory no longer exists";
 "status.locked" = "Locked";
-"status.clean" = "Clean";
+"status.clean" = "No uncommitted changes";
 "status.unavailable" = "Status unavailable";
 
-"recommendation.keep_main" = "Keep main worktree";
-"recommendation.missing_path" = "Only a stale Git registration remains; safe to clean up";
-"recommendation.missing_path_locked" = "Directory is gone, but its Git registration is locked";
-"recommendation.uncommitted" = "Has uncommitted changes";
-"recommendation.locked_reason" = "Locked: %@";
-"recommendation.blocked" = "Cannot clean up";
-"recommendation.cleanup_target_unavailable" = "Remote default branch not found";
-"recommendation.not_merged" = "Not merged into %@";
-"recommendation.cleanable" = "Merged into %@; safe to clean up";
+"recommendation.keep_main" = "This is the main Worktree; it cannot be cleaned up";
+"recommendation.missing_path" = "Clean up leftover record";
+"recommendation.missing_path.detail" = "No branches or existing files will be deleted";
+"recommendation.missing_path_locked" = "Leftover record is locked";
+"recommendation.missing_path_locked.detail" = "Unlock it before cleaning it up";
+"recommendation.uncommitted" = "Cannot clean up yet";
+"recommendation.uncommitted.detail" = "Git cannot recover uncommitted changes after the directory is deleted";
+"recommendation.locked" = "Cannot clean up yet";
+"recommendation.locked.detail" = "This Worktree is locked; unlock it first";
+"recommendation.locked_reason" = "This Worktree is locked: %@";
+"recommendation.blocked" = "Cannot clean up yet";
+"recommendation.cleanup_target_unavailable" = "Cannot clean up yet";
+"recommendation.cleanup_target_unavailable.detail" = "The main branch was not found, so the app cannot tell whether the code was merged";
+"recommendation.not_merged" = "Not merged into the main branch (%@)";
+"recommendation.not_merged.detail" = "Can be cleaned up; the branch and committed code will be kept";
+"recommendation.detached_not_merged" = "Not merged into the main branch (%@), with no branch pointing to it";
+"recommendation.detached_not_merged.detail" = "Create a branch first, or these commits may be difficult to recover after cleanup";
+"recommendation.cleanable" = "Merged into the main branch (%@); safe to clean up";
+"recommendation.cleanable.detail" = "The code is already available from the main branch";
 
 "open_target.finder" = "Finder";
 "open_target.terminal" = "Terminal";

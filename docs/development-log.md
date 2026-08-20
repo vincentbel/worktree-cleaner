@@ -4,6 +4,21 @@ This is a concise record of implementation discoveries that affect architecture,
 scope, safety, or future agent work. Routine code changes belong in Git history
 instead.
 
+## 2026-08-20
+
+- Added project-level batch cleanup for worktrees that pass the conservative
+  `cleanable` policy. Eligible rows are selected by default in the main table so
+  status, size, recommendation, and path remain visible while making the
+  selection. Clean branch-backed unmerged rows are available as explicit
+  opt-ins, while unmerged detached HEAD, blocked, and stale rows stay disabled.
+  The leading-side red cleanup action
+  opens a visual confirmation sheet that puts the total in the title and shows
+  merged/unmerged counts as one vertical breakdown. Plain-language copy explains
+  what is removed and where committed code remains available. Each
+  confirmed removal repeats the applicable core preflight, runs sequentially,
+  preserves branches, and does not stop the remaining batch when one item
+  fails.
+
 ## 2026-08-19
 
 - Confirmed Swift 6, SwiftUI, macOS 14+, a standard Xcode app target, and a local
@@ -69,9 +84,10 @@ instead.
   application locations, uses their bundle icons, and opens paths with
   `NSWorkspace`. Finder and path copying are included.
 - Clean linked worktrees with commits not merged into the configured cleanup
-  target can now be explicitly removed. They keep the "needs review" status and
-  require a stronger warning; main, dirty, locked, missing, and unknown-target
-  cases remain blocked. Removal shows an in-row progress indicator, returns a
+  target can now be explicitly removed when a branch preserves those commits.
+  An unmerged detached HEAD is blocked until a branch is created; main, dirty,
+  locked, missing, and unknown-target cases also remain blocked. Removal shows
+  an in-row progress indicator, returns a
   fresh snapshot, and reports success or failure to the user.
 - Repository discovery now derives each project's extra linked-worktree count
   from the `git worktree list` output it already fetched. The sidebar groups

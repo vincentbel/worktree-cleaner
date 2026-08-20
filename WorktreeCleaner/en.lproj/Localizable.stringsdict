@@ -125,9 +125,89 @@
       <key>NSStringFormatValueTypeKey</key>
       <string>d</string>
       <key>one</key>
-      <string>%d change</string>
+      <string>%d uncommitted change</string>
       <key>other</key>
-      <string>%d changes</string>
+      <string>%d uncommitted changes</string>
+    </dict>
+  </dict>
+  <key>batch.delete_button</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@worktrees@</string>
+    <key>worktrees</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>Clean Up %d Worktree…</string>
+      <key>other</key>
+      <string>Clean Up %d Worktrees…</string>
+    </dict>
+  </dict>
+  <key>batch.confirm_button</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@worktrees@</string>
+    <key>worktrees</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>Clean Up %d Worktree</string>
+      <key>other</key>
+      <string>Clean Up %d Worktrees</string>
+    </dict>
+  </dict>
+  <key>batch.confirm.title</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@worktrees@</string>
+    <key>worktrees</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>Clean Up %d Worktree?</string>
+      <key>other</key>
+      <string>Clean Up %d Worktrees?</string>
+    </dict>
+  </dict>
+  <key>batch.result.removed</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@worktrees@</string>
+    <key>worktrees</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>Cleaned up %d Worktree</string>
+      <key>other</key>
+      <string>Cleaned up %d Worktrees</string>
+    </dict>
+  </dict>
+  <key>batch.result.skipped</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@worktrees@</string>
+    <key>worktrees</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>d</string>
+      <key>one</key>
+      <string>Skipped %d worktree</string>
+      <key>other</key>
+      <string>Skipped %d worktrees</string>
     </dict>
   </dict>
 </dict>

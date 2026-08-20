@@ -42,21 +42,19 @@
 "error.directory_duplicate" = "这个目录已经添加：%@";
 "error.directory_overlap" = "这个目录与已有扫描目录存在包含关系：%@";
 
-"removal.confirm.title" = "确认删除这个 worktree？";
-"removal.unmerged.title" = "尚未合入 %@，仍要删除？";
-"removal.unmerged.button" = "仍然删除未合入的 worktree";
-"removal.permanent.button" = "永久删除 worktree";
-"removal.branch_preserved" = "Git 分支 %@ 会保留。";
-"removal.detached_warning" = "当前为 Detached HEAD；删除后提交可能难以找回，请先记录提交 %@。";
-"removal.unmerged.message" = "这个 worktree 的提交尚未合入 %@。目录删除后无法撤销。%@执行前会再次检查工作区是否干净。\n\n%@";
-"removal.confirm.message" = "将通过 Git 删除这个目录。此操作不可撤销，但不会删除分支。执行前会再次检查 Git 状态。\n\n%@";
-"success.removed_branch" = "已删除 %@，分支 %@ 仍然保留。";
-"success.removed_detached" = "已删除 %@。原 worktree 为 Detached HEAD。";
+"removal.confirm.title" = "清理这个 Worktree？";
+"removal.unmerged.title" = "这个 Worktree 尚未合入主分支（%@）";
+"removal.unmerged.button" = "仍然清理";
+"removal.permanent.button" = "清理 Worktree";
+"removal.unmerged.message" = "清理只会删除 Worktree 目录。对应分支和已经提交的代码都会保留，之后可以随时切换到该分支查看。\n\n目录：%@";
+"removal.confirm.message" = "清理只会删除 Worktree 目录，不会删除任何 Git 分支。代码已经保存在主分支中。\n\n目录：%@";
+"success.removed_branch" = "已清理 %@，分支 %@ 仍然保留。";
+"success.removed_detached" = "已清理 %@。原 Worktree 为 Detached HEAD。";
 "success.pruned_registrations" = "已清理当前仓库内所有失效的 worktree 登记，分支和现存文件均未改动。";
 
-"prune.confirm.title" = "清理失效的 worktree 登记？";
-"prune.confirm.button" = "清理登记";
-"prune.confirm.message" = "该目录已经不存在，只剩 Git worktree 登记：\n\n%@\n\nGit 将清理当前仓库内所有已失效且未锁定的 worktree 登记，不会删除分支，也不会改动任何仍然存在的文件。";
+"prune.confirm.title" = "清理残留的 Worktree 记录？";
+"prune.confirm.button" = "清理记录";
+"prune.confirm.message" = "这个 Worktree 目录已经不存在，只剩 Git 中的失效记录：\n\n%@\n\n清理会删除当前仓库中所有未锁定的失效记录，不会删除分支或任何仍然存在的文件。";
 
 "table.shared_git_data" = "共享 Git 数据 %@";
 "table.calculating_shared_git" = "正在计算共享 Git 数据…";
@@ -70,11 +68,13 @@
 "column.actions" = "操作";
 "worktree.main" = "主工作区";
 
-"action.delete" = "删除";
-"action.delete.unmerged_help" = "删除这个尚未合入的 worktree";
-"action.delete.help" = "删除这个 worktree";
-"action.prune_registration" = "清理登记";
-"action.prune_registration.help" = "清理失效的 Git worktree 登记；不会删除分支或现存文件";
+"action.delete" = "清理";
+"action.batch_cleanup" = "清理所选…";
+"action.batch_cleanup.help" = "清理选中的 Worktree 目录，不会删除对应 Git 分支";
+"action.delete.unmerged_help" = "清理这个尚未合入主分支的 Worktree；分支和已提交代码会保留";
+"action.delete.help" = "清理这个 Worktree 目录，不会删除 Git 分支";
+"action.prune_registration" = "清理残留记录";
+"action.prune_registration.help" = "清理失效的 Git Worktree 记录，不会删除分支或现存文件";
 "action.path_copied" = "路径已复制";
 "action.copy_path" = "复制路径";
 "action.open_with" = "使用 %@ 打开";
@@ -83,21 +83,46 @@
 "action.recalculate_disk_usage.short" = "重新计算";
 "action.recalculate_disk_usage" = "重新计算磁盘占用";
 
+"batch.confirm.subtitle" = "所有选中的 Worktree 都没有未提交修改。清理只会删除 Worktree 目录，不会删除 Git 分支。";
+"batch.confirm.breakdown.title" = "所选 Worktree";
+"batch.confirm.breakdown.merged" = "已合入主分支";
+"batch.confirm.breakdown.merged.detail" = "代码已经保存在主分支中";
+"batch.confirm.breakdown.unmerged" = "尚未合入主分支";
+"batch.confirm.breakdown.unmerged.detail" = "对应分支和已提交代码都会保留";
+"batch.selected_count" = "已选择 %d 个";
+"batch.select_all.label" = "选择全部可删除的 Worktree";
+"batch.select_all.help" = "选择或取消选择全部可删除的 Worktree，包括尚未合入项";
+"batch.select_worktree.label" = "选择 %@ 进行批量清理";
+"batch.progress" = "正在清理 %d / %d…";
+"batch.result.failure" = "%@：%@";
+"batch.result.success" = "%@，未删除任何分支。";
+"batch.result.partial" = "%@，%@；未删除任何分支。\n\n%@";
+
 "disk.large_help" = "占用超过 5 GB，建议检查";
-"status.missing_path" = "目录已不存在";
+"status.missing_path" = "Worktree 目录已不存在";
 "status.locked" = "已锁定";
-"status.clean" = "干净";
+"status.clean" = "无未提交修改";
 "status.unavailable" = "状态不可用";
 
-"recommendation.keep_main" = "保留主工作区";
-"recommendation.missing_path" = "仅残留 Git 登记，可安全清理";
-"recommendation.missing_path_locked" = "目录已不存在，但 Git 登记处于锁定状态";
-"recommendation.uncommitted" = "有未提交修改";
-"recommendation.locked_reason" = "已锁定：%@";
-"recommendation.blocked" = "不可清理";
-"recommendation.cleanup_target_unavailable" = "未识别远端默认分支";
-"recommendation.not_merged" = "尚未合入 %@";
-"recommendation.cleanable" = "已合入 %@，可清理";
+"recommendation.keep_main" = "这是主工作区，不能清理";
+"recommendation.missing_path" = "可以清理残留记录";
+"recommendation.missing_path.detail" = "不会删除分支或任何现存文件";
+"recommendation.missing_path_locked" = "残留记录已锁定";
+"recommendation.missing_path_locked.detail" = "请先解除锁定再清理";
+"recommendation.uncommitted" = "暂时不能清理";
+"recommendation.uncommitted.detail" = "未提交修改在删除目录后无法通过 Git 恢复";
+"recommendation.locked" = "暂时不能清理";
+"recommendation.locked.detail" = "这个 Worktree 已锁定，请先解除锁定";
+"recommendation.locked_reason" = "这个 Worktree 已锁定：%@";
+"recommendation.blocked" = "暂时不能清理";
+"recommendation.cleanup_target_unavailable" = "暂时不能清理";
+"recommendation.cleanup_target_unavailable.detail" = "没有找到主分支，无法判断代码是否已经合入";
+"recommendation.not_merged" = "尚未合入主分支（%@）";
+"recommendation.not_merged.detail" = "可以清理；对应分支和已提交代码都会保留";
+"recommendation.detached_not_merged" = "未合入主分支（%@），并且没有对应分支";
+"recommendation.detached_not_merged.detail" = "请先创建分支，否则清理后提交可能难以找回";
+"recommendation.cleanable" = "已合入主分支（%@），可以清理";
+"recommendation.cleanable.detail" = "代码已经保存在主分支中";
 
 "open_target.finder" = "访达";
 "open_target.terminal" = "终端";

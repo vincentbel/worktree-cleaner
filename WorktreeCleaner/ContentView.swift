@@ -8,6 +8,7 @@ struct ContentView: View {
   @Environment(\.openSettings) private var openSettings
   @State private var isChoosingDirectory = false
   @State private var pendingRemoval: GitWorktree?
+  @State private var pendingBatchRemoval: BatchRemovalRequest?
   @State private var pendingPrune: GitWorktree?
 
   var body: some View {
@@ -187,6 +188,12 @@ struct ContentView: View {
       }
       Task { await model.addDirectory(url) }
     }
+    .sheet(item: $pendingBatchRemoval) { request in
+      BatchRemovalConfirmationSheet(request: request) {
+        pendingBatchRemoval = nil
+        Task { await model.removeAll(request.worktrees) }
+      }
+    }
     .alert(
       L10n.string("alert.operation_failed"),
       isPresented: Binding(
@@ -316,10 +323,14 @@ struct ContentView: View {
         isMeasuringDiskUsage: model.isMeasuringDiskUsage,
         isDiskUsageRefreshDisabled: model.isLoadingSnapshot || model.isMeasuringDiskUsage,
         removingWorktreeID: model.removingWorktreeID,
+        batchRemovalProgress: model.batchRemovalProgress,
         onRecalculateDiskUsage: { model.recalculateDiskUsage() },
         onMessage: { model.showTransientMessage($0) },
         onError: { model.errorMessage = $0 },
         onRemove: { pendingRemoval = $0 },
+        onBatchRemove: { worktrees in
+          pendingBatchRemoval = BatchRemovalRequest(worktrees: worktrees)
+        },
         onPrune: { pendingPrune = $0 }
       )
     } else if model.isScanning || model.isLoadingSnapshot {
@@ -353,20 +364,159 @@ struct ContentView: View {
 
   private func removalMessage(for worktree: GitWorktree) -> String {
     switch worktree.cleanupRecommendation.removalKind {
-    case .unmerged(let target):
-      let recoveryMessage =
-        worktree.branch.map {
-          L10n.format("removal.branch_preserved", $0)
-        } ?? L10n.format("removal.detached_warning", worktree.head)
-      return L10n.format(
-        "removal.unmerged.message",
-        target,
-        recoveryMessage,
-        worktree.path.path
-      )
+    case .unmerged:
+      return L10n.format("removal.unmerged.message", worktree.path.path)
     default:
       return L10n.format("removal.confirm.message", worktree.path.path)
     }
+  }
+
+}
+
+private struct BatchRemovalRequest: Identifiable {
+  let id = UUID()
+  let worktrees: [GitWorktree]
+
+  var unmergedCount: Int {
+    worktrees.count { worktree in
+      if case .unmerged = worktree.cleanupRecommendation.removalKind {
+        return true
+      }
+      return false
+    }
+  }
+
+  var mergedCount: Int {
+    worktrees.count - unmergedCount
+  }
+}
+
+private struct BatchRemovalConfirmationSheet: View {
+  let request: BatchRemovalRequest
+  let onConfirm: () -> Void
+
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 20) {
+      HStack(alignment: .top, spacing: 14) {
+        Image(systemName: headerSystemImage)
+          .font(.system(size: 32, weight: .semibold))
+          .foregroundStyle(headerColor)
+          .frame(width: 40, height: 40)
+
+        VStack(alignment: .leading, spacing: 5) {
+          Text(L10n.plural("batch.confirm.title", count: request.worktrees.count))
+            .font(.title2.weight(.semibold))
+          Text(L10n.string("batch.confirm.subtitle"))
+            .foregroundStyle(.secondary)
+        }
+      }
+
+      selectionBreakdown
+
+      Divider()
+
+      HStack {
+        Spacer()
+        Button(L10n.string("common.cancel")) {
+          dismiss()
+        }
+        .keyboardShortcut(.cancelAction)
+
+        Button(role: .destructive) {
+          dismiss()
+          onConfirm()
+        } label: {
+          Text(L10n.plural("batch.confirm_button", count: request.worktrees.count))
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(.red)
+        .keyboardShortcut(.defaultAction)
+      }
+    }
+    .padding(24)
+    .frame(width: 540)
+  }
+
+  @ViewBuilder
+  private var selectionBreakdown: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      Text(L10n.string("batch.confirm.breakdown.title"))
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(.secondary)
+        .padding(.bottom, 4)
+
+      if request.mergedCount > 0 {
+        BatchRemovalBreakdownRow(
+          count: request.mergedCount,
+          title: L10n.string("batch.confirm.breakdown.merged"),
+          detail: L10n.string("batch.confirm.breakdown.merged.detail"),
+          systemImage: "checkmark.circle.fill",
+          tint: .green
+        )
+      }
+
+      if request.mergedCount > 0, request.unmergedCount > 0 {
+        Divider()
+          .padding(.leading, 34)
+      }
+
+      if request.unmergedCount > 0 {
+        BatchRemovalBreakdownRow(
+          count: request.unmergedCount,
+          title: L10n.string("batch.confirm.breakdown.unmerged"),
+          detail: L10n.string("batch.confirm.breakdown.unmerged.detail"),
+          systemImage: "exclamationmark.triangle.fill",
+          tint: .orange
+        )
+      }
+    }
+    .padding(14)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
+    .overlay {
+      RoundedRectangle(cornerRadius: 10)
+        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+    }
+  }
+
+  private var headerSystemImage: String {
+    request.unmergedCount > 0 ? "exclamationmark.triangle.fill" : "trash.circle.fill"
+  }
+
+  private var headerColor: Color {
+    request.unmergedCount > 0 ? .orange : .red
+  }
+}
+
+private struct BatchRemovalBreakdownRow: View {
+  let count: Int
+  let title: String
+  let detail: String
+  let systemImage: String
+  let tint: Color
+
+  var body: some View {
+    HStack(spacing: 10) {
+      Image(systemName: systemImage)
+        .foregroundStyle(tint)
+        .frame(width: 20)
+
+      VStack(alignment: .leading, spacing: 1) {
+        Text(title)
+          .font(.callout.weight(.medium))
+        Text(detail)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+
+      Spacer(minLength: 12)
+
+      Text(count.formatted())
+        .font(.title3.weight(.semibold).monospacedDigit())
+    }
+    .padding(.vertical, 9)
   }
 }
 
@@ -436,16 +586,57 @@ private struct WorktreeTable: View {
   let isMeasuringDiskUsage: Bool
   let isDiskUsageRefreshDisabled: Bool
   let removingWorktreeID: GitWorktree.ID?
+  let batchRemovalProgress: BatchRemovalProgress?
   let onRecalculateDiskUsage: () -> Void
   let onMessage: (String) -> Void
   let onError: (String) -> Void
   let onRemove: (GitWorktree) -> Void
+  let onBatchRemove: ([GitWorktree]) -> Void
   let onPrune: (GitWorktree) -> Void
+
+  @State private var selectedBatchRemovalIDs: Set<GitWorktree.ID> = []
 
   var body: some View {
     VStack(spacing: 0) {
       HStack {
         Text(L10n.plural("table.worktree_count", count: snapshot.worktrees.count))
+        Text(
+          L10n.format(
+            "batch.selected_count",
+            selectedBatchRemovalWorktrees.count
+          )
+        )
+        .foregroundStyle(.secondary)
+
+        Button {
+          onBatchRemove(selectedBatchRemovalWorktrees)
+        } label: {
+          Label(batchRemovalButtonTitle, systemImage: "trash")
+            .foregroundStyle(.red)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .tint(.red)
+        .disabled(
+          selectedBatchRemovalWorktrees.isEmpty
+            || removingWorktreeID != nil
+            || batchRemovalProgress != nil
+        )
+        .help(L10n.string("action.batch_cleanup.help"))
+
+        if let batchRemovalProgress {
+          Label(
+            L10n.format(
+              "batch.progress",
+              batchRemovalProgress.currentCount,
+              batchRemovalProgress.totalCount
+            ),
+            systemImage: "trash"
+          )
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+        }
+
         Spacer()
         if let sharedGitAllocatedBytes {
           Label(
@@ -495,13 +686,19 @@ private struct WorktreeTable: View {
           HStack(alignment: .top, spacing: 0) {
             ScrollView(.horizontal) {
               VStack(spacing: 0) {
-                WorktreeGridHeader()
+                WorktreeGridHeader(
+                  selectionState: batchSelectionState,
+                  isSelectionDisabled: isRemovalInProgress || batchRemovalSelectableIDs.isEmpty,
+                  onToggleAll: toggleAllBatchSelections
+                )
                 ForEach(Array(snapshot.worktrees.enumerated()), id: \.element.id) {
                   index, worktree in
                   WorktreeGridRow(
                     worktree: worktree,
                     allocatedBytes: worktreeAllocatedBytes[worktree.id],
-                    isMeasuringDiskUsage: isMeasuringDiskUsage
+                    isMeasuringDiskUsage: isMeasuringDiskUsage,
+                    isSelectedForBatchRemoval: batchSelection(for: worktree),
+                    isBatchSelectionEnabled: isBatchRemovable(worktree) && !isRemovalInProgress
                   )
                   .background(rowBackground(at: index))
                   .overlay(alignment: .bottom) { Divider() }
@@ -532,7 +729,7 @@ private struct WorktreeTable: View {
                 WorktreeActionRow(
                   worktree: worktree,
                   isRemoving: removingWorktreeID == worktree.id,
-                  isRemovalInProgress: removingWorktreeID != nil,
+                  isRemovalInProgress: removingWorktreeID != nil || batchRemovalProgress != nil,
                   onMessage: onMessage,
                   onError: onError,
                   onRemove: onRemove,
@@ -550,6 +747,100 @@ private struct WorktreeTable: View {
       }
     }
     .navigationTitle(snapshot.repository.name)
+    .onAppear {
+      selectedBatchRemovalIDs = defaultBatchRemovalIDs
+    }
+    .onChange(of: snapshot.repository.id) {
+      selectedBatchRemovalIDs = defaultBatchRemovalIDs
+    }
+    .onChange(of: batchRemovalSelectableIDs) { _, currentIDs in
+      selectedBatchRemovalIDs.formIntersection(currentIDs)
+    }
+    .onChange(of: defaultBatchRemovalIDs) { previousIDs, currentIDs in
+      selectedBatchRemovalIDs.subtract(previousIDs.subtracting(currentIDs))
+      selectedBatchRemovalIDs.formUnion(currentIDs.subtracting(previousIDs))
+    }
+  }
+
+  private var defaultBatchRemovalWorktrees: [GitWorktree] {
+    snapshot.worktrees.filter(isCleanable)
+  }
+
+  private var defaultBatchRemovalIDs: Set<GitWorktree.ID> {
+    Set(defaultBatchRemovalWorktrees.map(\.id))
+  }
+
+  private var batchRemovalSelectableWorktrees: [GitWorktree] {
+    snapshot.worktrees.filter(isBatchRemovable)
+  }
+
+  private var batchRemovalSelectableIDs: Set<GitWorktree.ID> {
+    Set(batchRemovalSelectableWorktrees.map(\.id))
+  }
+
+  private var selectedBatchRemovalWorktrees: [GitWorktree] {
+    batchRemovalSelectableWorktrees.filter { selectedBatchRemovalIDs.contains($0.id) }
+  }
+
+  private var batchRemovalButtonTitle: String {
+    guard !selectedBatchRemovalWorktrees.isEmpty else {
+      return L10n.string("action.batch_cleanup")
+    }
+    return L10n.plural(
+      "batch.delete_button",
+      count: selectedBatchRemovalWorktrees.count
+    )
+  }
+
+  private var isRemovalInProgress: Bool {
+    removingWorktreeID != nil || batchRemovalProgress != nil
+  }
+
+  private var batchSelectionState: BatchSelectionState {
+    if selectedBatchRemovalIDs.isEmpty {
+      return .none
+    }
+    if batchRemovalSelectableIDs.isSubset(of: selectedBatchRemovalIDs) {
+      return .all
+    }
+    return .some
+  }
+
+  private func toggleAllBatchSelections() {
+    if batchSelectionState == .all {
+      selectedBatchRemovalIDs.subtract(batchRemovalSelectableIDs)
+    } else {
+      selectedBatchRemovalIDs.formUnion(batchRemovalSelectableIDs)
+    }
+  }
+
+  private func batchSelection(for worktree: GitWorktree) -> Binding<Bool> {
+    Binding(
+      get: { selectedBatchRemovalIDs.contains(worktree.id) },
+      set: { isSelected in
+        if isSelected {
+          selectedBatchRemovalIDs.insert(worktree.id)
+        } else {
+          selectedBatchRemovalIDs.remove(worktree.id)
+        }
+      }
+    )
+  }
+
+  private func isCleanable(_ worktree: GitWorktree) -> Bool {
+    if case .cleanable = worktree.cleanupRecommendation {
+      return true
+    }
+    return false
+  }
+
+  private func isBatchRemovable(_ worktree: GitWorktree) -> Bool {
+    switch worktree.cleanupRecommendation {
+    case .cleanable, .needsReview(reason: .notMerged):
+      return true
+    default:
+      return false
+    }
   }
 
   private func rowBackground(at index: Int) -> Color {
@@ -557,22 +848,53 @@ private struct WorktreeTable: View {
   }
 }
 
+private enum BatchSelectionState {
+  case none
+  case some
+  case all
+
+  var systemImage: String {
+    switch self {
+    case .none:
+      "square"
+    case .some:
+      "minus.square.fill"
+    case .all:
+      "checkmark.square.fill"
+    }
+  }
+}
+
 private enum WorktreeGridMetrics {
   static let headerHeight: CGFloat = 30
-  static let rowHeight: CGFloat = 52
+  static let rowHeight: CGFloat = 56
+  static let selectionWidth: CGFloat = 44
   static let worktreeWidth: CGFloat = 260
-  static let statusWidth: CGFloat = 140
+  static let statusWidth: CGFloat = 160
   static let diskWidth: CGFloat = 110
-  static let recommendationWidth: CGFloat = 240
+  static let recommendationWidth: CGFloat = 330
   static let pathWidth: CGFloat = 420
   static let actionWidth: CGFloat = 84
   static let contentWidth =
-    worktreeWidth + statusWidth + diskWidth + recommendationWidth + pathWidth
+    selectionWidth + worktreeWidth + statusWidth + diskWidth + recommendationWidth + pathWidth
 }
 
 private struct WorktreeGridHeader: View {
+  let selectionState: BatchSelectionState
+  let isSelectionDisabled: Bool
+  let onToggleAll: () -> Void
+
   var body: some View {
     HStack(spacing: 0) {
+      GridCell(width: WorktreeGridMetrics.selectionWidth) {
+        Button(action: onToggleAll) {
+          Image(systemName: selectionState.systemImage)
+        }
+        .buttonStyle(.plain)
+        .disabled(isSelectionDisabled)
+        .help(L10n.string("batch.select_all.help"))
+        .accessibilityLabel(L10n.string("batch.select_all.label"))
+      }
       GridCell(width: WorktreeGridMetrics.worktreeWidth) {
         Text(L10n.string("column.worktree"))
       }
@@ -597,9 +919,23 @@ private struct WorktreeGridRow: View {
   let worktree: GitWorktree
   let allocatedBytes: Int64?
   let isMeasuringDiskUsage: Bool
+  @Binding var isSelectedForBatchRemoval: Bool
+  let isBatchSelectionEnabled: Bool
 
   var body: some View {
     HStack(spacing: 0) {
+      GridCell(width: WorktreeGridMetrics.selectionWidth) {
+        Toggle("", isOn: $isSelectedForBatchRemoval)
+          .labelsHidden()
+          .toggleStyle(.checkbox)
+          .disabled(!isBatchSelectionEnabled)
+          .accessibilityLabel(
+            L10n.format(
+              "batch.select_worktree.label",
+              worktree.branch ?? "Detached HEAD"
+            )
+          )
+      }
       GridCell(width: WorktreeGridMetrics.worktreeWidth) {
         VStack(alignment: .leading, spacing: 3) {
           Text(worktree.branch ?? "Detached HEAD")
@@ -865,50 +1201,127 @@ private struct RecommendationLabel: View {
   let recommendation: CleanupRecommendation
 
   var body: some View {
+    VStack(alignment: .leading, spacing: 2) {
+      Label(presentation.title, systemImage: presentation.systemImage)
+        .font(.callout.weight(.medium))
+        .foregroundStyle(presentation.tint)
+        .lineLimit(1)
+
+      if let detail = presentation.detail {
+        Text(detail)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .lineLimit(1)
+          .padding(.leading, 21)
+      }
+    }
+    .help(presentation.help)
+  }
+
+  private var presentation: RecommendationPresentation {
     switch recommendation {
     case .protectedMainWorktree:
-      Label(L10n.string("recommendation.keep_main"), systemImage: "shield.fill")
-        .foregroundStyle(.secondary)
+      RecommendationPresentation(
+        title: L10n.string("recommendation.keep_main"),
+        detail: nil,
+        systemImage: "shield.fill",
+        tint: .secondary
+      )
     case .blocked(let reasons):
-      Label(blockedTitle(reasons), systemImage: "xmark.octagon.fill")
-        .foregroundStyle(.red)
+      blockedPresentation(reasons)
     case .needsReview(let reason):
-      Label(reviewTitle(reason), systemImage: "questionmark.circle.fill")
-        .foregroundStyle(.orange)
+      reviewPresentation(reason)
     case .cleanable(let target):
-      Label(L10n.format("recommendation.cleanable", target), systemImage: "trash.circle.fill")
-        .foregroundStyle(.green)
+      RecommendationPresentation(
+        title: L10n.format("recommendation.cleanable", target),
+        detail: L10n.string("recommendation.cleanable.detail"),
+        systemImage: "trash.circle.fill",
+        tint: .green
+      )
     }
   }
 
-  private func blockedTitle(_ reasons: [CleanupBlocker]) -> String {
+  private func blockedPresentation(_ reasons: [CleanupBlocker]) -> RecommendationPresentation {
     if reasons.contains(where: {
       if case .missing = $0 { true } else { false }
     }) {
       if reasons.contains(where: {
         if case .locked = $0 { true } else { false }
       }) {
-        return L10n.string("recommendation.missing_path_locked")
+        return RecommendationPresentation(
+          title: L10n.string("recommendation.missing_path_locked"),
+          detail: L10n.string("recommendation.missing_path_locked.detail"),
+          systemImage: "lock.fill",
+          tint: .orange
+        )
       }
-      return L10n.string("recommendation.missing_path")
+      return RecommendationPresentation(
+        title: L10n.string("recommendation.missing_path"),
+        detail: L10n.string("recommendation.missing_path.detail"),
+        systemImage: "eraser.fill",
+        tint: .green
+      )
     }
     if reasons.contains(.uncommittedChanges) {
-      return L10n.string("recommendation.uncommitted")
+      return RecommendationPresentation(
+        title: L10n.string("recommendation.uncommitted"),
+        detail: L10n.string("recommendation.uncommitted.detail"),
+        systemImage: "xmark.octagon.fill",
+        tint: .red
+      )
     }
     if case .locked(let reason) = reasons.first {
-      return reason.map { L10n.format("recommendation.locked_reason", $0) }
-        ?? L10n.string("status.locked")
+      return RecommendationPresentation(
+        title: L10n.string("recommendation.locked"),
+        detail: reason.map { L10n.format("recommendation.locked_reason", $0) }
+          ?? L10n.string("recommendation.locked.detail"),
+        systemImage: "lock.fill",
+        tint: .orange
+      )
     }
-    return L10n.string("recommendation.blocked")
+    return RecommendationPresentation(
+      title: L10n.string("recommendation.blocked"),
+      detail: nil,
+      systemImage: "xmark.octagon.fill",
+      tint: .red
+    )
   }
 
-  private func reviewTitle(_ reason: CleanupReviewReason) -> String {
+  private func reviewPresentation(_ reason: CleanupReviewReason) -> RecommendationPresentation {
     switch reason {
     case .cleanupTargetUnavailable:
-      L10n.string("recommendation.cleanup_target_unavailable")
+      RecommendationPresentation(
+        title: L10n.string("recommendation.cleanup_target_unavailable"),
+        detail: L10n.string("recommendation.cleanup_target_unavailable.detail"),
+        systemImage: "questionmark.circle.fill",
+        tint: .orange
+      )
     case .notMerged(let target):
-      L10n.format("recommendation.not_merged", target)
+      RecommendationPresentation(
+        title: L10n.format("recommendation.not_merged", target),
+        detail: L10n.string("recommendation.not_merged.detail"),
+        systemImage: "exclamationmark.triangle.fill",
+        tint: .orange
+      )
+    case .detachedHeadNotMerged(let target):
+      RecommendationPresentation(
+        title: L10n.format("recommendation.detached_not_merged", target),
+        detail: L10n.string("recommendation.detached_not_merged.detail"),
+        systemImage: "xmark.octagon.fill",
+        tint: .red
+      )
     }
+  }
+}
+
+private struct RecommendationPresentation {
+  let title: String
+  let detail: String?
+  let systemImage: String
+  let tint: Color
+
+  var help: String {
+    [title, detail].compactMap { $0 }.joined(separator: ". ")
   }
 }
 

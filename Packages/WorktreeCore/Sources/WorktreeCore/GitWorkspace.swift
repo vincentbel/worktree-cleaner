@@ -1,5 +1,10 @@
 import Foundation
 
+public enum WorktreeRemovalPolicy: Sendable {
+  case cleanableOnly
+  case allowUnmerged
+}
+
 public struct GitWorkspace: Sendable {
   public init() {}
 
@@ -76,15 +81,16 @@ public struct GitWorkspace: Sendable {
 
   public func remove(
     _ worktree: GitWorktree,
-    from repository: GitRepository
+    from repository: GitRepository,
+    policy: WorktreeRemovalPolicy = .allowUnmerged
   ) async throws -> RepositorySnapshot {
     let currentSnapshot = try await snapshot(of: repository)
     guard let currentWorktree = currentSnapshot.worktrees.first(where: { $0.id == worktree.id })
     else {
       throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
     }
-    switch currentWorktree.cleanupRecommendation {
-    case .cleanable, .needsReview(reason: .notMerged):
+    switch (currentWorktree.cleanupRecommendation, policy) {
+    case (.cleanable, _), (.needsReview(reason: .notMerged), .allowUnmerged):
       break
     default:
       throw GitWorkspaceError.worktreeNotCleanable(
@@ -282,6 +288,7 @@ public struct GitWorkspace: Sendable {
               cleanupRecommendation: try cleanupRecommendation(
                 head: head,
                 isMain: isMain,
+                isDetached: isDetached,
                 isLocked: isLocked,
                 lockReason: lockReason,
                 isPrunable: isPrunable,
@@ -345,6 +352,7 @@ public struct GitWorkspace: Sendable {
   private func cleanupRecommendation(
     head: String,
     isMain: Bool,
+    isDetached: Bool,
     isLocked: Bool,
     lockReason: String?,
     isPrunable: Bool,
@@ -382,6 +390,9 @@ public struct GitWorkspace: Sendable {
       )
       return .cleanable(target: target)
     } catch let error as GitCommandError where error.terminationStatus == 1 {
+      if isDetached {
+        return .needsReview(reason: .detachedHeadNotMerged(target: target))
+      }
       return .needsReview(reason: .notMerged(target: target))
     }
   }

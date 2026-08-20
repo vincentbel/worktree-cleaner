@@ -19,7 +19,8 @@ final class GitWorkspaceRemovalTests: XCTestCase {
 
     let updatedSnapshot = try await workspace.remove(
       linkedWorktree,
-      from: repository
+      from: repository,
+      policy: .cleanableOnly
     )
 
     XCTAssertEqual(updatedSnapshot.worktrees.count, 1)
@@ -94,11 +95,113 @@ final class GitWorkspaceRemovalTests: XCTestCase {
 
     let updatedSnapshot = try await workspace.remove(
       linkedWorktree,
-      from: repository
+      from: repository,
+      policy: .allowUnmerged
     )
 
     XCTAssertEqual(updatedSnapshot.worktrees.count, 1)
     XCTAssertTrue(updatedSnapshot.worktrees[0].isMain)
+  }
+
+  func testCleanableOnlyRemovalRefusesUnmergedLinkedWorktree() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try configureRemoteDefaultBranch(in: fixture.repository)
+    try Data("agent result".utf8).write(
+      to: fixture.linkedWorktree.appending(path: "result.txt")
+    )
+    try runGit(["add", "result.txt"], in: fixture.linkedWorktree)
+    try runGit(
+      [
+        "-c", "user.name=Worktree Cleaner Tests",
+        "-c", "user.email=tests@example.com",
+        "commit", "--quiet", "-m", "Unmerged agent result",
+      ],
+      in: fixture.linkedWorktree
+    )
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let linkedWorktree = try XCTUnwrap(
+      initialSnapshot.worktrees.first { !$0.isMain }
+    )
+
+    do {
+      _ = try await workspace.remove(
+        linkedWorktree,
+        from: repository,
+        policy: .cleanableOnly
+      )
+      XCTFail("Expected strict removal to reject an unmerged worktree")
+    } catch let error as GitWorkspaceError {
+      guard case .worktreeNotCleanable(let path, let recommendation) = error else {
+        return XCTFail("Unexpected error: \(error)")
+      }
+      XCTAssertEqual(path, fixture.linkedWorktree.resolvingSymlinksInPath())
+      XCTAssertEqual(
+        recommendation,
+        .needsReview(reason: .notMerged(target: "origin/main"))
+      )
+    }
+
+    let currentSnapshot = try await workspace.snapshot(of: repository)
+    XCTAssertEqual(currentSnapshot.worktrees.count, 2)
+  }
+
+  func testRemovalRefusesUnmergedDetachedHead() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try configureRemoteDefaultBranch(in: fixture.repository)
+    try runGit(["switch", "--detach", "--quiet"], in: fixture.linkedWorktree)
+    try Data("detached result".utf8).write(
+      to: fixture.linkedWorktree.appending(path: "detached-result.txt")
+    )
+    try runGit(["add", "detached-result.txt"], in: fixture.linkedWorktree)
+    try runGit(
+      [
+        "-c", "user.name=Worktree Cleaner Tests",
+        "-c", "user.email=tests@example.com",
+        "commit", "--quiet", "-m", "Unmerged detached result",
+      ],
+      in: fixture.linkedWorktree
+    )
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let linkedWorktree = try XCTUnwrap(
+      initialSnapshot.worktrees.first { !$0.isMain }
+    )
+    XCTAssertEqual(
+      linkedWorktree.cleanupRecommendation,
+      .needsReview(reason: .detachedHeadNotMerged(target: "origin/main"))
+    )
+
+    do {
+      _ = try await workspace.remove(
+        linkedWorktree,
+        from: repository,
+        policy: .allowUnmerged
+      )
+      XCTFail("Expected removal to reject an unmerged detached HEAD")
+    } catch let error as GitWorkspaceError {
+      guard case .worktreeNotCleanable(let path, let recommendation) = error else {
+        return XCTFail("Unexpected error: \(error)")
+      }
+      XCTAssertEqual(path, fixture.linkedWorktree.resolvingSymlinksInPath())
+      XCTAssertEqual(
+        recommendation,
+        .needsReview(reason: .detachedHeadNotMerged(target: "origin/main"))
+      )
+    }
+
+    let currentSnapshot = try await workspace.snapshot(of: repository)
+    XCTAssertEqual(currentSnapshot.worktrees.count, 2)
   }
 
   func testPruneRemovesMissingWorktreeRegistrationAndPreservesBranch() async throws {

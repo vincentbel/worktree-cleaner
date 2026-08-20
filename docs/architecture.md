@@ -136,6 +136,24 @@ a preflight, rejects a restored or locked target record, and may remove every
 stale unlocked registration in that repository. It never deletes branches or
 existing worktree files.
 
+Batch removal selects worktrees currently classified as `cleanable` by default.
+Clean worktrees classified as `notMerged` can also be selected explicitly when
+a branch keeps their commits reachable. An unmerged detached HEAD receives its
+own non-removable recommendation until the user creates a branch. Other blocked
+worktrees, the main worktree, unavailable cleanup targets, and stale
+registrations cannot be selected for the batch. The main table keeps status,
+measured size, recommendation, and path visible while the user makes the
+selection. A stronger destructive confirmation presents the total only in its
+title, then shows merged and unmerged counts as a single vertical breakdown so
+the categories cannot be mistaken for additional selected items. User-facing
+copy distinguishes uncommitted changes, which would be lost with their
+directory, from committed-but-unmerged code that remains reachable from its
+branch.
+Removal runs sequentially and repeats the applicable
+clean-or-unmerged preflight immediately before every item; a failed item is
+reported and skipped without stopping the remaining confirmed removals. Git
+branches are preserved for every successful item.
+
 This policy is intentionally conservative:
 
 - Squash or rebase merges can produce different commit identities, so a merged
@@ -196,6 +214,12 @@ The primary window uses a two-column `NavigationSplitView`:
   beside the sidebar scope picker and follows either the selected root or the
   all-roots scope. The adjacent add button remains a shortcut for choosing a new
   base directory, while the sidebar footer opens directory settings.
+- The project table has a selection column for batch cleanup. Cleanable
+  worktrees are selected by default, clean branch-backed unmerged worktrees are
+  selectable but initially unchecked, and ineligible rows remain disabled. The selected count
+  and red delete action sit together on the leading side of the detail header;
+  a visual confirmation sheet precedes deletion, which then reports sequential
+  progress and a final removed/skipped summary.
 - Settings: a native tabbed settings window shares the application's single
   `AppState`. Its directory tab adds and removes configured roots and shows each
   root's project count, scan progress, or error. Its update tab binds directly

@@ -2,6 +2,11 @@ import Foundation
 import Observation
 import WorktreeCore
 
+struct BatchRemovalProgress: Equatable {
+  let currentCount: Int
+  let totalCount: Int
+}
+
 @MainActor
 @Observable
 final class AppState {
@@ -17,6 +22,7 @@ final class AppState {
   var isLoadingSnapshot = false
   var isMeasuringDiskUsage = false
   var removingWorktreeID: GitWorktree.ID?
+  var batchRemovalProgress: BatchRemovalProgress?
   var errorMessage: String?
   var successMessage: String?
   var transientMessage: String?
@@ -390,7 +396,8 @@ final class AppState {
 
   func remove(_ worktree: GitWorktree) async {
     guard let repository = snapshot?.repository,
-      removingWorktreeID == nil
+      removingWorktreeID == nil,
+      batchRemovalProgress == nil
     else { return }
 
     let loadID = UUID()
@@ -442,9 +449,103 @@ final class AppState {
     }
   }
 
+  func removeAll(_ worktrees: [GitWorktree]) async {
+    guard let currentSnapshot = snapshot,
+      removingWorktreeID == nil,
+      batchRemovalProgress == nil
+    else { return }
+
+    let requestedIDs = Set(worktrees.map(\.id))
+    let candidates = currentSnapshot.worktrees.filter { worktree in
+      guard requestedIDs.contains(worktree.id) else { return false }
+      switch worktree.cleanupRecommendation {
+      case .cleanable, .needsReview(reason: .notMerged):
+        return true
+      default:
+        return false
+      }
+    }
+    guard !candidates.isEmpty else { return }
+
+    let repository = currentSnapshot.repository
+    let loadID = UUID()
+    activeSnapshotLoadID = loadID
+    diskUsageTask?.cancel()
+    isMeasuringDiskUsage = false
+    isLoadingSnapshot = true
+    batchRemovalProgress = BatchRemovalProgress(
+      currentCount: 1,
+      totalCount: candidates.count
+    )
+    errorMessage = nil
+    successMessage = nil
+    defer {
+      if activeSnapshotLoadID == loadID {
+        isLoadingSnapshot = false
+      }
+      removingWorktreeID = nil
+      batchRemovalProgress = nil
+    }
+
+    var removedCount = 0
+    var failures: [String] = []
+
+    for (index, worktree) in candidates.enumerated() {
+      batchRemovalProgress = BatchRemovalProgress(
+        currentCount: index + 1,
+        totalCount: candidates.count
+      )
+      removingWorktreeID = worktree.id
+      do {
+        _ = try await workspace.remove(
+          worktree,
+          from: repository,
+          policy: .allowUnmerged
+        )
+        removedCount += 1
+      } catch {
+        let label = worktree.branch ?? worktree.path.lastPathComponent
+        failures.append(L10n.format("batch.result.failure", label, error.localizedDescription))
+      }
+    }
+
+    do {
+      let loadedSnapshot = try await workspace.snapshot(of: repository)
+      guard activeSnapshotLoadID == loadID,
+        selectedRepositoryID == repository.id
+      else { return }
+      updateRepository(loadedSnapshot.repository)
+      snapshotsByRepositoryID[repository.id] = loadedSnapshot
+      snapshot = loadedSnapshot
+      diskUsageCache[repository.id] = nil
+      worktreeAllocatedBytes = [:]
+      sharedGitAllocatedBytes = nil
+      diskUsageMeasuredAt = nil
+      persistWorkspaceCache()
+      startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
+
+      let removedSummary = L10n.plural("batch.result.removed", count: removedCount)
+      if failures.isEmpty {
+        successMessage = L10n.format("batch.result.success", removedSummary)
+      } else {
+        let skippedSummary = L10n.plural("batch.result.skipped", count: failures.count)
+        successMessage = L10n.format(
+          "batch.result.partial",
+          removedSummary,
+          skippedSummary,
+          failures.joined(separator: "\n")
+        )
+      }
+    } catch {
+      guard activeSnapshotLoadID == loadID else { return }
+      errorMessage = error.localizedDescription
+    }
+  }
+
   func prune(_ worktree: GitWorktree) async {
     guard let repository = snapshot?.repository,
-      removingWorktreeID == nil
+      removingWorktreeID == nil,
+      batchRemovalProgress == nil
     else { return }
 
     let loadID = UUID()
