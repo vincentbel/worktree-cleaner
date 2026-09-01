@@ -72,8 +72,9 @@ xcodebuild \
   -destination "generic/platform=macOS" \
   -derivedDataPath "$derived_data" \
   -archivePath "$archive_path" \
-  -allowProvisioningUpdates \
   DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+  CODE_SIGN_STYLE=Manual \
+  CODE_SIGN_IDENTITY="Developer ID Application" \
   MARKETING_VERSION="$release_version" \
   CURRENT_PROJECT_VERSION="$build_number" \
   SPARKLE_FEED_URL="$feed_url" \
@@ -83,8 +84,7 @@ xcodebuild \
   -exportArchive \
   -archivePath "$archive_path" \
   -exportPath "$export_directory" \
-  -exportOptionsPlist "$repository_root/Config/ExportOptions.plist" \
-  -allowProvisioningUpdates
+  -exportOptionsPlist "$repository_root/Config/ExportOptions.plist"
 
 application_path="$export_directory/WorktreeCleaner.app"
 if [[ ! -d "$application_path" ]]; then
