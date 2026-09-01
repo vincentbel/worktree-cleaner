@@ -4,6 +4,17 @@ This is a concise record of implementation discoveries that affect architecture,
 scope, safety, or future agent work. Routine code changes belong in Git history
 instead.
 
+## 2026-09-01
+
+- The source repository will be public, so GitHub Release assets and the Sparkle
+  appcast now live alongside the source in `vincentbel/worktree-cleaner`. This
+  supersedes the earlier plan for a separate public binary-only repository.
+- Added a manually dispatched GitHub Actions release workflow. A protected
+  `release` environment gates access to the Developer ID, notarization, and
+  Sparkle secrets; the GitHub-hosted macOS runner imports them into temporary
+  files and a temporary keychain. The workflow uploads the release archive and
+  appcast to a draft GitHub Release before making that release public.
+
 ## 2026-08-20
 
 - Added project-level batch cleanup for worktrees that pass the conservative
@@ -151,10 +162,11 @@ instead.
   update archives, appcasts, and release notes with a project-specific EdDSA
   key. Developer ID export, notarization, appcast generation, and publication
   are scripted without embedding a GitHub credential in the application.
-- The private source repository cannot directly serve unauthenticated GitHub
-  release assets. A separate public binary-only repository is the default
-  update endpoint; keeping binaries private would require an authenticated
-  gateway and a per-user or per-device authorization design.
+- The original private-source plan required a separate public binary-only
+  update repository because private GitHub release assets cannot be fetched
+  without authentication. This plan was superseded when the source repository
+  was selected for public release; keeping binaries private would still require
+  an authenticated gateway and per-user or per-device authorization.
 - Moved base-directory management from a modal sheet into the native macOS
   Settings scene. The main window and Settings scene share one `AppState`, while
   the Updates tab writes automatic-check and automatic-download choices through

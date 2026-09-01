@@ -11,7 +11,7 @@ release_version="$1"
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_directory/.." && pwd)"
 updates_directory="${2:-$repository_root/build/release/$release_version/updates}"
-release_repository="${RELEASE_REPOSITORY:-vincentbel/worktree-cleaner-releases}"
+release_repository="${RELEASE_REPOSITORY:-vincentbel/worktree-cleaner}"
 update_archive="$updates_directory/WorktreeCleaner-${release_version}.zip"
 appcast="$updates_directory/appcast.xml"
 release_notes="$updates_directory/WorktreeCleaner-${release_version}.md"
@@ -28,7 +28,7 @@ fi
 
 visibility="$(gh repo view "$release_repository" --json visibility --jq .visibility)"
 if [[ "$visibility" != "PUBLIC" ]]; then
-  echo "Sparkle's token-free endpoint requires a PUBLIC binary-only repository:" >&2
+  echo "Sparkle's token-free endpoint requires a PUBLIC repository:" >&2
   echo "  $release_repository" >&2
   exit 77
 fi
@@ -47,26 +47,18 @@ fi
 gh release create \
   "v$release_version" \
   "$update_archive#Worktree Cleaner $release_version" \
+  "$appcast#Sparkle appcast" \
   --repo "$release_repository" \
   --target "$default_branch" \
   --title "Worktree Cleaner $release_version" \
+  --draft \
   "${release_notes_options[@]}"
 
-encoded_appcast="$(base64 < "$appcast" | tr -d '\n')"
-content_endpoint="repos/$release_repository/contents/appcast.xml"
-publish_options=(
-  --method PUT
-  "$content_endpoint"
-  --raw-field "message=Publish appcast for $release_version"
-  --raw-field "content=$encoded_appcast"
-  --raw-field "branch=$default_branch"
-)
-
-if existing_sha="$(gh api "$content_endpoint" --jq .sha 2>/dev/null)"; then
-  publish_options+=(--raw-field "sha=$existing_sha")
-fi
-
-gh api "${publish_options[@]}" >/dev/null
+gh release edit \
+  "v$release_version" \
+  --repo "$release_repository" \
+  --draft=false \
+  --latest
 
 echo "Published Worktree Cleaner $release_version to $release_repository."
-echo "Feed: https://raw.githubusercontent.com/$release_repository/$default_branch/appcast.xml"
+echo "Feed: https://github.com/$release_repository/releases/latest/download/appcast.xml"

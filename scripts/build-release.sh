@@ -27,8 +27,8 @@ fi
 
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_directory/.." && pwd)"
-release_repository="${RELEASE_REPOSITORY:-vincentbel/worktree-cleaner-releases}"
-feed_url="${SPARKLE_FEED_URL:-https://raw.githubusercontent.com/${release_repository}/main/appcast.xml}"
+release_repository="${RELEASE_REPOSITORY:-vincentbel/worktree-cleaner}"
+feed_url="${SPARKLE_FEED_URL:-https://github.com/${release_repository}/releases/latest/download/appcast.xml}"
 download_url_base="${SPARKLE_UPDATE_BASE_URL:-https://github.com/${release_repository}/releases/download/v${release_version}}"
 download_url_prefix="${download_url_base%/}/"
 sparkle_account="${SPARKLE_ACCOUNT:-dev.worktreecleaner.app}"

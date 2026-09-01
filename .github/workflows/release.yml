@@ -1,0 +1,254 @@
+name: Release
+
+run-name: Release v${{ inputs.version }} (build ${{ inputs.build_number }})
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Marketing version in x.y.z format
+        required: true
+        type: string
+      build_number:
+        description: Increasing positive integer build number
+        required: true
+        type: string
+      release_notes:
+        description: Markdown release notes embedded in the Sparkle feed
+        required: true
+        type: string
+      dry_run:
+        description: Sign and notarize without publishing a GitHub Release
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  validate:
+    name: Validate release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ inputs.version }}
+      BUILD_NUMBER: ${{ inputs.build_number }}
+      RELEASE_NOTES: ${{ inputs.release_notes }}
+      DRY_RUN: ${{ inputs.dry_run }}
+    steps:
+      - name: Check release inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Releases must be dispatched from the main branch." >&2
+            exit 64
+          fi
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must use x.y.z format: $VERSION" >&2
+            exit 64
+          fi
+
+          if [[ ! "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Build number must be a positive integer: $BUILD_NUMBER" >&2
+            exit 64
+          fi
+
+          if [[ -z "$RELEASE_NOTES" ]]; then
+            echo "Release notes must not be empty." >&2
+            exit 64
+          fi
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            echo "Dry run: skipping public repository and existing release checks."
+          else
+            visibility="$(gh api "repos/$GITHUB_REPOSITORY" --jq .visibility)"
+            if [[ "$visibility" != "public" ]]; then
+              echo "The repository must be public before publishing a Sparkle release." >&2
+              exit 77
+            fi
+
+            if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
+              gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$VERSION" >/dev/null 2>&1; then
+              echo "Release or tag v$VERSION already exists." >&2
+              exit 65
+            fi
+
+            appcast_path="$RUNNER_TEMP/appcast.xml"
+            if curl \
+              --fail \
+              --location \
+              --silent \
+              --show-error \
+              "https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml" \
+              --output "$appcast_path"; then
+              latest_build="$(
+                python3 - "$appcast_path" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+
+          versions = []
+          for element in ET.parse(sys.argv[1]).iter():
+              for name, value in element.attrib.items():
+                  if name.endswith("}version") and value.isdigit():
+                      versions.append(int(value))
+
+          print(max(versions, default=0))
+          PY
+              )"
+
+              if (( BUILD_NUMBER <= latest_build )); then
+                echo "Build number must be greater than the published build $latest_build." >&2
+                exit 65
+              fi
+            fi
+          fi
+
+  release:
+    name: Sign, notarize, and publish
+    needs: validate
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: macos-26
+    timeout-minutes: 120
+    environment: release
+    permissions:
+      contents: write
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      DEVELOPMENT_TEAM: ${{ vars.APPLE_TEAM_ID || secrets.APPLE_TEAM_ID }}
+      RELEASE_REPOSITORY: ${{ github.repository }}
+      VERSION: ${{ inputs.version }}
+      BUILD_NUMBER: ${{ inputs.build_number }}
+      RELEASE_NOTES: ${{ inputs.release_notes }}
+      DEVELOPER_ID_P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+      DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+      APPLE_ACCOUNT: ${{ secrets.APPLE_ACCOUNT }}
+      APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+      SPARKLE_ED_KEY_BASE64: ${{ secrets.SPARKLE_ED_KEY_BASE64 }}
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Prepare signing credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          : "${DEVELOPMENT_TEAM:?Configure APPLE_TEAM_ID in the release environment}"
+          : "${DEVELOPER_ID_P12_BASE64:?Configure DEVELOPER_ID_P12_BASE64 in the release environment}"
+          : "${DEVELOPER_ID_P12_PASSWORD:?Configure DEVELOPER_ID_P12_PASSWORD in the release environment}"
+          : "${APPLE_ACCOUNT:?Configure APPLE_ACCOUNT in the release environment}"
+          : "${APPLE_APP_PASSWORD:?Configure APPLE_APP_PASSWORD in the release environment}"
+          : "${SPARKLE_ED_KEY_BASE64:?Configure SPARKLE_ED_KEY_BASE64 in the release environment}"
+
+          certificate_path="$RUNNER_TEMP/developer-id.p12"
+          keychain_path="$RUNNER_TEMP/release-signing.keychain-db"
+          sparkle_key_path="$RUNNER_TEMP/sparkle-ed-key"
+          release_notes_path="$RUNNER_TEMP/release-notes.md"
+          notary_profile="worktree-cleaner-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          keychain_password="$(uuidgen)"
+
+          printf '%s' "$DEVELOPER_ID_P12_BASE64" |
+            base64 --decode -o "$certificate_path"
+          printf '%s' "$SPARKLE_ED_KEY_BASE64" |
+            base64 --decode -o "$sparkle_key_path"
+          printf '%s\n' "$RELEASE_NOTES" > "$release_notes_path"
+          chmod 600 "$certificate_path" "$sparkle_key_path"
+
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" \
+            -P "$DEVELOPER_ID_P12_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k "$keychain_path"
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -k "$keychain_password" \
+            "$keychain_path"
+          security list-keychains -d user -s "$keychain_path"
+          rm -f "$certificate_path"
+
+          signing_identities="$(security find-identity -v -p codesigning "$keychain_path")"
+          echo "$signing_identities"
+          if ! grep -Fq "Developer ID Application" <<< "$signing_identities"; then
+            echo "The imported archive does not contain a valid Developer ID Application identity." >&2
+            exit 78
+          fi
+
+          xcrun notarytool store-credentials "$notary_profile" \
+            --apple-id "$APPLE_ACCOUNT" \
+            --team-id "$DEVELOPMENT_TEAM" \
+            --password "$APPLE_APP_PASSWORD"
+
+          {
+            echo "NOTARY_KEYCHAIN_PROFILE=$notary_profile"
+            echo "SPARKLE_ED_KEY_FILE=$sparkle_key_path"
+            echo "RELEASE_NOTES_FILE=$release_notes_path"
+          } >> "$GITHUB_ENV"
+
+      - name: Build, sign, and notarize
+        shell: bash
+        run: scripts/build-release.sh "$VERSION" "$BUILD_NUMBER"
+
+      - name: Validate release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          updates_directory="build/release/$VERSION/updates"
+          test -s "$updates_directory/WorktreeCleaner-$VERSION.zip"
+          test -s "$updates_directory/appcast.xml"
+          xmllint --noout "$updates_directory/appcast.xml"
+          grep -Fq "WorktreeCleaner-$VERSION.zip" "$updates_directory/appcast.xml"
+
+      - name: Publish GitHub release and appcast
+        if: ${{ ! inputs.dry_run }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/publish-release.sh "$VERSION"
+
+      - name: Write release summary
+        if: ${{ ! inputs.dry_run }}
+        shell: bash
+        run: |
+          {
+            echo "## Worktree Cleaner $VERSION"
+            echo
+            echo "- Release: https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION"
+            echo "- Appcast: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Write dry-run summary
+        if: ${{ inputs.dry_run }}
+        shell: bash
+        run: |
+          {
+            echo "## Worktree Cleaner $VERSION dry run"
+            echo
+            echo "Signing, notarization, stapling, and Gatekeeper validation succeeded."
+            echo "No GitHub Release or tag was created."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove temporary credentials
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          security delete-keychain "$RUNNER_TEMP/release-signing.keychain-db" 2>/dev/null || true
+          rm -f \
+            "$RUNNER_TEMP/developer-id.p12" \
+            "$RUNNER_TEMP/sparkle-ed-key" \
+            "$RUNNER_TEMP/release-notes.md"

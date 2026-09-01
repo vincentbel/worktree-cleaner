@@ -1,7 +1,7 @@
 # Worktree Cleaner Architecture
 
 Status: Accepted  
-Last updated: 2026-08-19
+Last updated: 2026-09-01
 
 ## Product goal
 
@@ -31,8 +31,8 @@ and disk usage.
   reference registered worktrees outside that root.
 - Use Sparkle 2 for direct-distribution updates. Update archives and the appcast
   are EdDSA signed, and release builds remain Developer ID signed and notarized.
-  The private source repository is separate from a public binary-only update
-  repository so the application never embeds a shared GitHub credential.
+  The public source repository also hosts GitHub Release assets and the appcast,
+  so the application can update without embedding a shared GitHub credential.
 
 ## Module seam
 

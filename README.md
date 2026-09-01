@@ -46,7 +46,7 @@ Worktree Cleaner is deliberately conservative:
 ## Install
 
 Download the latest signed and notarized build from the
-[Worktree Cleaner Releases][releases] repository.
+[latest GitHub release][releases].
 Unzip it, move `WorktreeCleaner.app` to your Applications folder, and open it.
 Future updates can be installed from inside the app.
 
@@ -70,4 +70,4 @@ files when you explicitly confirm a worktree cleanup.
 - [Architecture and safety decisions](docs/architecture.md)
 - [Release process](docs/releasing.md)
 
-[releases]: https://github.com/vincentbel/worktree-cleaner-releases/releases/latest
+[releases]: https://github.com/vincentbel/worktree-cleaner/releases/latest

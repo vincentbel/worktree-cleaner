@@ -199,7 +199,7 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.worktreecleaner.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SPARKLE_FEED_URL = "https://raw.githubusercontent.com/vincentbel/worktree-cleaner-releases/main/appcast.xml";
+				SPARKLE_FEED_URL = "https://github.com/vincentbel/worktree-cleaner/releases/latest/download/appcast.xml";
 				SPARKLE_PUBLIC_ED_KEY = "QhcTQ4qXsw5wUQ4ZyCc76NgSmqWTCCJSStq1Nu7Rfqg=";
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -225,7 +225,7 @@
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.worktreecleaner.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SPARKLE_FEED_URL = "https://raw.githubusercontent.com/vincentbel/worktree-cleaner-releases/main/appcast.xml";
+				SPARKLE_FEED_URL = "https://github.com/vincentbel/worktree-cleaner/releases/latest/download/appcast.xml";
 				SPARKLE_PUBLIC_ED_KEY = "QhcTQ4qXsw5wUQ4ZyCc76NgSmqWTCCJSStq1Nu7Rfqg=";
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
