@@ -12,6 +12,11 @@ parallel tasks, experiments, or agent sessions. Add one or more scan directories
 and the app finds the repositories inside them, shows every registered worktree,
 measures disk usage, and helps you decide what can be removed.
 
+<p align="center">
+  <img src="docs/images/worktree-cleaner.png"
+       alt="Worktree Cleaner showing cleanup recommendations for multiple Git worktrees">
+</p>
+
 ## Features
 
 - **🔍 Recursive discovery**: Find Git repositories across multiple scan directories.
