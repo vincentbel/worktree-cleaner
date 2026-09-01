@@ -5,12 +5,11 @@
 
 # Worktree Cleaner
 
-Find, inspect, and safely clean up Git worktrees across all your projects.
+Find Git worktrees across your projects, see exactly what is safe to remove, and
+reclaim disk space without losing work.
 
-Worktree Cleaner is a native macOS app for developers who use Git worktrees for
-parallel tasks, experiments, or agent sessions. Add one or more scan directories
-and the app finds the repositories inside them, shows every registered worktree,
-measures disk usage, and helps you decide what can be removed.
+A native macOS app that scans multiple directories and puts Git status, merge
+safety, and disk usage in one place.
 
 <p align="center">
   <img src="docs/images/worktree-cleaner.png"
@@ -19,53 +18,40 @@ measures disk usage, and helps you decide what can be removed.
 
 ## Features
 
-- **🔍 Recursive discovery**: Find Git repositories across multiple scan directories.
-- **🗂️ Focused project list**: Group projects with linked worktrees so cleanup
-  candidates are easy to find.
-- **🩺 Worktree health**: Inspect branch, Git status, lock state, disk usage, and
-  cleanup recommendations.
-- **🚀 Quick path actions**: Open a worktree in Finder or an installed editor or
-  terminal, or copy its path.
-- **🧹 Safe cleanup**: Remove one or multiple eligible linked worktrees while
-  preserving their Git branches.
-- **🧾 Stale registration cleanup**: Clean up Git worktree registrations for
-  directories that no longer exist.
-- **💾 Efficient disk insights**: Cache disk-usage results while refreshing Git
-  status independently.
+- **Find worktrees across projects.** Scan multiple directories and surface projects
+  with linked worktrees first.
+- **Know what is safe to remove.** See uncommitted changes, merge state, locks,
+  missing directories, and disk usage with a clear recommendation.
+- **Reclaim disk space safely.** Remove eligible worktrees individually or in a
+  batch without deleting their Git branches.
+- **Repair stale registrations.** Prune records whose worktree directories no
+  longer exist.
+- **Jump to any worktree.** Open it in Finder, a terminal, or an installed editor,
+  or copy its path.
 
-## Safety first
+## Safety guarantees
 
-Worktree Cleaner is deliberately conservative:
-
-- It rechecks the current Git state immediately before removing a worktree.
-- It never uses forced removal and never deletes a branch as a side effect.
-- Main, dirty, locked, and otherwise unsafe worktrees are blocked from cleanup.
-- A clean worktree with unmerged commits can be cleaned up when a branch keeps
-  those commits reachable. An unmerged detached HEAD is blocked until a branch
-  is created for it.
-- Recommendations are based on local Git state and should still be reviewed before
-  deletion.
+- **State is rechecked immediately before removal.**
+- **Worktrees are never force-removed, and branches are never deleted.**
+- **Main, dirty, and locked worktrees are blocked.**
+- A clean unmerged worktree can be removed when its branch keeps the commits
+  reachable. An unmerged detached HEAD is blocked until you create a branch.
 
 ## Install
 
-Download the latest signed and notarized build from the
-[latest GitHub release][releases].
-Unzip it, move `WorktreeCleaner.app` to your Applications folder, and open it.
-Future updates can be installed from inside the app.
+Download the latest signed and notarized build from
+[latest GitHub release][releases], unzip it, and move `WorktreeCleaner.app`
+to Applications.
 
-Worktree Cleaner requires macOS 14 or later and a Git installation available at
-`/usr/bin/git`.
+Requires **macOS 14 or later** and Git at `/usr/bin/git`.
 
 ## Getting started
 
-1. Select **Choose Directory** and add a directory that contains your Git projects.
-2. Choose a discovered project from the sidebar.
-3. Review its worktrees, status, disk usage, and cleanup recommendation.
-4. Use the path menu to open a worktree, or remove it when you are satisfied that
-   its work is no longer needed.
+1. Add one or more directories containing Git projects.
+2. Select a project and review its worktrees and recommendations.
+3. Clean up eligible worktrees individually or in a batch.
 
-Adding a scan directory does not modify its contents. Worktree Cleaner only changes
-files when you explicitly confirm a worktree cleanup.
+**Scanning is read-only.** Files change only after you explicitly confirm cleanup.
 
 ## Project documentation
 
