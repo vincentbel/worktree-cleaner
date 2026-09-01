@@ -59,4 +59,4 @@ Requires **macOS 14 or later** and Git at `/usr/bin/git`.
 - [Architecture and safety decisions](docs/architecture.md)
 - [Release process](docs/releasing.md)
 
-[releases]: https://github.com/vincentbel/worktree-cleaner/releases/latest
+[releases]: https://github.com/vincentbel/worktree-cleaner/releases

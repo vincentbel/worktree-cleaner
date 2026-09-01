@@ -10,10 +10,12 @@ fi
 release_version="$1"
 build_number="$2"
 
-if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Version must use x.y.z format: $release_version" >&2
+if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+  echo "Version must use x.y.z or x.y.z-prerelease format: $release_version" >&2
   exit 64
 fi
+
+marketing_version="${release_version%%-*}"
 
 if [[ ! "$build_number" =~ ^[1-9][0-9]*$ ]]; then
   echo "Build number must be a positive integer: $build_number" >&2
@@ -28,7 +30,11 @@ fi
 script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_directory/.." && pwd)"
 release_repository="${RELEASE_REPOSITORY:-vincentbel/worktree-cleaner}"
-feed_url="${SPARKLE_FEED_URL:-https://github.com/${release_repository}/releases/latest/download/appcast.xml}"
+default_feed_url="https://github.com/${release_repository}/releases/latest/download/appcast.xml"
+if [[ "$release_version" == *-* ]]; then
+  default_feed_url="https://github.com/${release_repository}/releases/download/v${release_version}/appcast.xml"
+fi
+feed_url="${SPARKLE_FEED_URL:-$default_feed_url}"
 download_url_base="${SPARKLE_UPDATE_BASE_URL:-https://github.com/${release_repository}/releases/download/v${release_version}}"
 download_url_prefix="${download_url_base%/}/"
 sparkle_account="${SPARKLE_ACCOUNT:-dev.worktreecleaner.app}"
@@ -75,7 +81,7 @@ xcodebuild \
   DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
   CODE_SIGN_STYLE=Manual \
   CODE_SIGN_IDENTITY="Developer ID Application" \
-  MARKETING_VERSION="$release_version" \
+  MARKETING_VERSION="$marketing_version" \
   CURRENT_PROJECT_VERSION="$build_number" \
   SPARKLE_FEED_URL="$feed_url" \
   archive

@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Marketing version in x.y.z format
+        description: Version in x.y.z or x.y.z-prerelease format
         required: true
         type: string
       build_number:
@@ -52,8 +52,8 @@ jobs:
             exit 64
           fi
 
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Version must use x.y.z format: $VERSION" >&2
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Version must use x.y.z or x.y.z-prerelease format: $VERSION" >&2
             exit 64
           fi
 
@@ -225,11 +225,19 @@ jobs:
         if: ${{ ! inputs.dry_run }}
         shell: bash
         run: |
+          if [[ "$VERSION" == *-* ]]; then
+            release_kind="Pre-release"
+            appcast_url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/appcast.xml"
+          else
+            release_kind="Release"
+            appcast_url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml"
+          fi
+
           {
-            echo "## Worktree Cleaner $VERSION"
+            echo "## Worktree Cleaner $VERSION $release_kind"
             echo
             echo "- Release: https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION"
-            echo "- Appcast: https://github.com/$GITHUB_REPOSITORY/releases/latest/download/appcast.xml"
+            echo "- Appcast: $appcast_url"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Write dry-run summary

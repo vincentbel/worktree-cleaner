@@ -126,7 +126,8 @@ environment approval still applies.
 2. Open **Actions → Release → Run workflow**.
 3. Select the `main` branch.
 4. Enter:
-   - `version`: a new `x.y.z` marketing version.
+   - `version`: a new `x.y.z` version, or a prerelease such as
+     `0.1.0-alpha.1`.
    - `build_number`: a positive integer greater than every previous release.
    - `release_notes`: Markdown shown by GitHub and embedded in the signed
      Sparkle appcast.
@@ -141,6 +142,11 @@ The workflow refuses to publish from a branch other than `main`, to a private
 repository, or over an existing version tag. It creates a draft release, uploads
 the update archive and appcast, and only then publishes the release so clients
 never see an incomplete update.
+
+A version containing a hyphen is published as a GitHub Pre-release and is not
+marked as Latest. Its appcast is pinned to that prerelease's release asset;
+stable versions continue to use the `releases/latest/download/appcast.xml`
+feed.
 
 ## Local fallback
 
