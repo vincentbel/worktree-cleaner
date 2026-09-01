@@ -33,10 +33,13 @@ if [[ ! -f "$update_archive" || ! -f "$appcast" ]]; then
 fi
 
 visibility="$(gh repo view "$release_repository" --json visibility --jq .visibility)"
-if [[ "$visibility" != "PUBLIC" ]]; then
-  echo "Sparkle's token-free endpoint requires a PUBLIC repository:" >&2
+if [[ "$visibility" != "PUBLIC" && "$release_version" != *-* ]]; then
+  echo "A stable Sparkle release requires a PUBLIC repository:" >&2
   echo "  $release_repository" >&2
   exit 77
+fi
+if [[ "$visibility" != "PUBLIC" ]]; then
+  echo "Publishing a private prerelease for internal validation."
 fi
 
 default_branch="$(gh repo view "$release_repository" --json defaultBranchRef --jq .defaultBranchRef.name)"

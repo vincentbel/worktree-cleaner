@@ -8,10 +8,11 @@ attached to GitHub Releases alongside `appcast.xml`. Sparkle reads the latest
 appcast through GitHub's stable `releases/latest/download/appcast.xml` URL
 without embedding a GitHub credential in the distributed app.
 
-The repository must be public before publishing an update. If the update
-binaries must remain private, replace the feed and download URL settings with an
-authenticated update gateway. Do not add a shared personal access token to the
-app.
+The repository must be public before publishing a stable update. A prerelease
+may be published while the repository is private for internal validation, but
+only people with repository access can download it. If the update binaries must
+remain private, replace the feed and download URL settings with an authenticated
+update gateway. Do not add a shared personal access token to the app.
 
 ## Join the Apple Developer Program
 
@@ -146,7 +147,8 @@ never see an incomplete update.
 A version containing a hyphen is published as a GitHub Pre-release and is not
 marked as Latest. Its appcast is pinned to that prerelease's release asset;
 stable versions continue to use the `releases/latest/download/appcast.xml`
-feed.
+feed. A private prerelease can be used to validate the uploaded assets before
+making the repository public.
 
 ## Local fallback
 

@@ -71,9 +71,12 @@ jobs:
             echo "Dry run: skipping public repository and existing release checks."
           else
             visibility="$(gh api "repos/$GITHUB_REPOSITORY" --jq .visibility)"
-            if [[ "$visibility" != "public" ]]; then
-              echo "The repository must be public before publishing a Sparkle release." >&2
+            if [[ "$visibility" != "public" && "$VERSION" != *-* ]]; then
+              echo "A stable Sparkle release requires a public repository." >&2
               exit 77
+            fi
+            if [[ "$visibility" != "public" ]]; then
+              echo "Publishing a private prerelease for internal validation."
             fi
 
             if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 ||
