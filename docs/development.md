@@ -42,6 +42,21 @@ Launch that exact build for manual verification:
 open -n /tmp/worktree-cleaner-derived/Build/Products/Debug/WorktreeCleaner.app
 ```
 
+## Screenshot demo data
+
+Generate disposable Git repositories and launch the Debug app with privacy-safe
+demo data:
+
+```sh
+./scripts/run-demo.sh
+```
+
+The script rebuilds `/private/tmp/worktree-cleaner-demo`, creates repositories
+covering the main cleanup states, builds the app, and opens it with
+`--demo-directory` in English for the README screenshot. Demo mode ignores the
+saved scan directories and workspace cache without changing them. A normal
+launch returns to the saved workspace.
+
 ## Tests and formatting
 
 Run the core integration tests:
