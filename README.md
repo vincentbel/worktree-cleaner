@@ -5,11 +5,11 @@
 
 # Worktree Cleaner
 
-Find Git worktrees across your projects, see exactly what is safe to remove, and
-reclaim disk space without losing work.
+Worktree Cleaner is a free, open-source, lightweight native macOS app for safely
+cleaning up Git worktrees across projects.
 
-A native macOS app that scans multiple directories and puts Git status, merge
-safety, and disk usage in one place.
+See what is safe to remove, reclaim disk space, and keep branches and uncommitted
+work protected.
 
 <p align="center">
   <img src="docs/images/worktree-cleaner.png"
