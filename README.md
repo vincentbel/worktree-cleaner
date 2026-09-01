@@ -32,8 +32,6 @@ measures disk usage, and helps you decide what can be removed.
   directories that no longer exist.
 - **💾 Efficient disk insights**: Cache disk-usage results while refreshing Git
   status independently.
-- **🌐 Localized interface**: Use the app in English or Simplified Chinese.
-- **✨ Automatic updates**: Receive signed in-app updates through Sparkle.
 
 ## Safety first
 
