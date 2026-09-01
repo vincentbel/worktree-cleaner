@@ -687,9 +687,10 @@ private struct WorktreeTable: View {
             ScrollView(.horizontal) {
               VStack(spacing: 0) {
                 WorktreeGridHeader(
-                  selectionState: batchSelectionState,
-                  isSelectionDisabled: isRemovalInProgress || batchRemovalSelectableIDs.isEmpty,
-                  onToggleAll: toggleAllBatchSelections
+                  selections: batchRemovalSelectableWorktrees.map {
+                    batchSelection(for: $0)
+                  },
+                  isSelectionDisabled: isRemovalInProgress || batchRemovalSelectableIDs.isEmpty
                 )
                 ForEach(Array(snapshot.worktrees.enumerated()), id: \.element.id) {
                   index, worktree in
@@ -796,24 +797,6 @@ private struct WorktreeTable: View {
     removingWorktreeID != nil || batchRemovalProgress != nil
   }
 
-  private var batchSelectionState: BatchSelectionState {
-    if selectedBatchRemovalIDs.isEmpty {
-      return .none
-    }
-    if batchRemovalSelectableIDs.isSubset(of: selectedBatchRemovalIDs) {
-      return .all
-    }
-    return .some
-  }
-
-  private func toggleAllBatchSelections() {
-    if batchSelectionState == .all {
-      selectedBatchRemovalIDs.subtract(batchRemovalSelectableIDs)
-    } else {
-      selectedBatchRemovalIDs.formUnion(batchRemovalSelectableIDs)
-    }
-  }
-
   private func batchSelection(for worktree: GitWorktree) -> Binding<Bool> {
     Binding(
       get: { selectedBatchRemovalIDs.contains(worktree.id) },
@@ -848,23 +831,6 @@ private struct WorktreeTable: View {
   }
 }
 
-private enum BatchSelectionState {
-  case none
-  case some
-  case all
-
-  var systemImage: String {
-    switch self {
-    case .none:
-      "square"
-    case .some:
-      "minus.square.fill"
-    case .all:
-      "checkmark.square.fill"
-    }
-  }
-}
-
 private enum WorktreeGridMetrics {
   static let headerHeight: CGFloat = 30
   static let rowHeight: CGFloat = 56
@@ -880,20 +846,18 @@ private enum WorktreeGridMetrics {
 }
 
 private struct WorktreeGridHeader: View {
-  let selectionState: BatchSelectionState
+  let selections: [Binding<Bool>]
   let isSelectionDisabled: Bool
-  let onToggleAll: () -> Void
 
   var body: some View {
     HStack(spacing: 0) {
       GridCell(width: WorktreeGridMetrics.selectionWidth) {
-        Button(action: onToggleAll) {
-          Image(systemName: selectionState.systemImage)
-        }
-        .buttonStyle(.plain)
-        .disabled(isSelectionDisabled)
-        .help(L10n.string("batch.select_all.help"))
-        .accessibilityLabel(L10n.string("batch.select_all.label"))
+        Toggle("", sources: selections, isOn: \.self)
+          .labelsHidden()
+          .clearDisabledCheckboxStyle()
+          .disabled(isSelectionDisabled)
+          .help(L10n.string("batch.select_all.help"))
+          .accessibilityLabel(L10n.string("batch.select_all.label"))
       }
       GridCell(width: WorktreeGridMetrics.worktreeWidth) {
         Text(L10n.string("column.worktree"))
@@ -927,7 +891,7 @@ private struct WorktreeGridRow: View {
       GridCell(width: WorktreeGridMetrics.selectionWidth) {
         Toggle("", isOn: $isSelectedForBatchRemoval)
           .labelsHidden()
-          .toggleStyle(.checkbox)
+          .clearDisabledCheckboxStyle()
           .disabled(!isBatchSelectionEnabled)
           .accessibilityLabel(
             L10n.format(

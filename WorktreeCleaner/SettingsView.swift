@@ -176,6 +176,7 @@ private struct UpdateSettingsView: View {
           L10n.string("settings.updates.automatic_check"),
           isOn: $automaticallyChecksForUpdates
         )
+        .clearDisabledCheckboxStyle()
         .onChange(of: automaticallyChecksForUpdates) { _, newValue in
           updater.automaticallyChecksForUpdates = newValue
         }
@@ -184,6 +185,7 @@ private struct UpdateSettingsView: View {
           L10n.string("settings.updates.automatic_download"),
           isOn: $automaticallyDownloadsUpdates
         )
+        .clearDisabledCheckboxStyle()
         .disabled(!automaticallyChecksForUpdates)
         .onChange(of: automaticallyDownloadsUpdates) { _, newValue in
           updater.automaticallyDownloadsUpdates = newValue
