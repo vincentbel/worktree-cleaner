@@ -18,13 +18,15 @@ safety, and disk usage in one place.
 
 ## Features
 
-- **Recursive discovery.** Add one or more scan directories and automatically find
-  the Git repositories and worktrees inside them.
-- **Know what is safe to remove.** See uncommitted changes, merge state, locks,
-  missing directories, and disk usage with a clear recommendation.
-- **Reclaim disk space safely.** Remove eligible worktrees individually or in a
+- **🧹 Reclaim disk space safely.** Remove eligible worktrees individually or in a
   batch without deleting their Git branches.
-- **Repair stale registrations.** Prune records whose worktree directories no
+- **🛡️ Know what is safe to remove.** See uncommitted changes, merge state, locks,
+  missing directories, and disk usage with a clear recommendation.
+- **🔍 Recursive discovery.** Add one or more scan directories and automatically find
+  the Git repositories and worktrees inside them.
+- **🪶 Lightweight native app.** The current universal macOS Release build is about
+  **6.7 MB** installed.
+- **🧰 Repair stale registrations.** Prune records whose worktree directories no
   longer exist.
 
 ## Safety guarantees
