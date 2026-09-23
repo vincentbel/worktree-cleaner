@@ -168,7 +168,7 @@ Build and notarize:
 ```sh
 DEVELOPMENT_TEAM=YOUR_TEAM_ID \
 RELEASE_NOTES_FILE=/path/to/release-notes.md \
-scripts/build-release.sh 0.2.0 2
+scripts/build-release.sh 0.1.1 3
 ```
 
 The script archives and exports with Developer ID signing, then uses
@@ -195,7 +195,7 @@ Applications shortcut.
 Publish only after reviewing the generated appcast:
 
 ```sh
-scripts/publish-release.sh 0.2.0
+scripts/publish-release.sh 0.1.1
 ```
 
 The publishing script requires an authenticated GitHub CLI.
