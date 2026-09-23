@@ -18,7 +18,7 @@ script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repository_root="$(cd "$script_directory/.." && pwd)"
 updates_directory="${2:-$repository_root/build/release/$release_version/updates}"
 release_repository="${RELEASE_REPOSITORY:-vincentbel/worktree-cleaner}"
-update_archive="$updates_directory/WorktreeCleaner-${release_version}.zip"
+update_archive="$updates_directory/WorktreeCleaner-${release_version}.dmg"
 appcast="$updates_directory/appcast.xml"
 release_notes="$updates_directory/WorktreeCleaner-${release_version}.md"
 
@@ -64,7 +64,7 @@ fi
 
 gh release create \
   "v$release_version" \
-  "$update_archive#Worktree Cleaner $release_version" \
+  "$update_archive#Worktree Cleaner $release_version (DMG)" \
   "$appcast#Sparkle appcast" \
   --repo "$release_repository" \
   --target "$default_branch" \

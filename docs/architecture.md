@@ -31,6 +31,8 @@ and disk usage.
   reference registered worktrees outside that root.
 - Use Sparkle 2 for direct-distribution updates. Update archives and the appcast
   are EdDSA signed, and release builds remain Developer ID signed and notarized.
+  The same signed and notarized DMG serves manual installation and automatic
+  updates, with the app and an Applications shortcut at the volume root.
   The public source repository also hosts GitHub Release assets and the appcast,
   so the application can update without embedding a shared GitHub credential.
 

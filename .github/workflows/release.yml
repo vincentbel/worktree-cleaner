@@ -212,10 +212,11 @@ jobs:
           set -euo pipefail
 
           updates_directory="build/release/$VERSION/updates"
-          test -s "$updates_directory/WorktreeCleaner-$VERSION.zip"
+          test -s "$updates_directory/WorktreeCleaner-$VERSION.dmg"
+          hdiutil verify "$updates_directory/WorktreeCleaner-$VERSION.dmg"
           test -s "$updates_directory/appcast.xml"
           xmllint --noout "$updates_directory/appcast.xml"
-          grep -Fq "WorktreeCleaner-$VERSION.zip" "$updates_directory/appcast.xml"
+          grep -Fq "WorktreeCleaner-$VERSION.dmg" "$updates_directory/appcast.xml"
 
       - name: Publish GitHub release and appcast
         if: ${{ ! inputs.dry_run }}
@@ -240,6 +241,7 @@ jobs:
             echo "## Worktree Cleaner $VERSION $release_kind"
             echo
             echo "- Release: https://github.com/$GITHUB_REPOSITORY/releases/tag/v$VERSION"
+            echo "- DMG: https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/WorktreeCleaner-$VERSION.dmg"
             echo "- Appcast: $appcast_url"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -250,7 +252,7 @@ jobs:
           {
             echo "## Worktree Cleaner $VERSION dry run"
             echo
-            echo "Signing, notarization, stapling, and Gatekeeper validation succeeded."
+            echo "DMG packaging, signing, notarization, stapling, and Gatekeeper validation succeeded."
             echo "No GitHub Release or tag was created."
           } >> "$GITHUB_STEP_SUMMARY"
 

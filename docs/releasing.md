@@ -2,9 +2,10 @@
 
 ## Distribution model
 
-The application source, signed `appcast.xml`, and notarized update archives all
-live in the public `vincentbel/worktree-cleaner` repository. Update archives are
-attached to GitHub Releases alongside `appcast.xml`. Sparkle reads the latest
+The application source, signed `appcast.xml`, and notarized DMGs all live in the
+public `vincentbel/worktree-cleaner` repository. Each release includes
+`WorktreeCleaner-<version>.dmg` alongside `appcast.xml`. The same DMG provides
+drag-to-Applications installation and Sparkle updates. Sparkle reads the latest
 appcast through GitHub's stable `releases/latest/download/appcast.xml` URL
 without embedding a GitHub credential in the distributed app.
 
@@ -27,7 +28,7 @@ Program membership.
    details.
 4. Create and install a `Developer ID Application` certificate. A
    `Developer ID Installer` certificate is not needed because releases contain
-   a zip archive of the app rather than an installer package.
+   a disk image containing the app and an Applications shortcut.
 5. Verify that the certificate and its private key are available:
 
    ```sh
@@ -117,9 +118,9 @@ It does not need a personal access token.
 
 Before the repository is public, run the workflow from `main` with `dry_run`
 enabled. A dry run imports every configured credential, builds and signs the
-app, submits it to Apple for notarization, staples the ticket, and runs the
-Gatekeeper check. It does not create a GitHub Release or tag. The release
-environment approval still applies.
+app, packages and signs the DMG, submits the DMG to Apple for notarization,
+staples its ticket, and validates the DMG and app with Gatekeeper. It does not
+create a GitHub Release or tag. The release environment approval still applies.
 
 ## Publish with GitHub Actions
 
@@ -141,7 +142,7 @@ environment approval still applies.
 
 The workflow refuses to publish from a branch other than `main`, to a private
 repository, or over an existing version tag. It creates a draft release, uploads
-the update archive and appcast, and only then publishes the release so clients
+the DMG and appcast, and only then publishes the release so clients
 never see an incomplete update.
 
 A version containing a hyphen is published as a GitHub Pre-release and is not
@@ -170,11 +171,26 @@ RELEASE_NOTES_FILE=/path/to/release-notes.md \
 scripts/build-release.sh 0.2.0 2
 ```
 
-The script archives and exports with Developer ID signing, submits the app to
-Apple for notarization, staples the ticket, validates Gatekeeper acceptance,
-creates the update zip, and generates a signed appcast. Delta updates are
-intentionally disabled so the release process does not need to retain previous
-application archives.
+The script archives and exports with Developer ID signing, then uses
+`scripts/package-dmg.sh` to package the app with an Applications shortcut. It
+signs the DMG with the app's Developer ID identity, submits the DMG (including
+the app inside) to Apple for notarization, staples the DMG ticket, and validates
+Gatekeeper acceptance for both the DMG and app. Sparkle signs the final stapled
+DMG and generates the signed appcast afterward. Delta updates are intentionally
+disabled so the release process does not need to retain previous application
+archives.
+
+To verify packaging locally without release credentials, run:
+
+```sh
+scripts/package-dmg.sh \
+  /tmp/worktree-cleaner-derived/Build/Products/Debug/WorktreeCleaner.app \
+  /tmp/WorktreeCleaner-preview.dmg
+```
+
+This packages the existing build without signing or notarizing the disk image.
+Open the DMG and verify that it contains `WorktreeCleaner.app` and a working
+Applications shortcut.
 
 Publish only after reviewing the generated appcast:
 

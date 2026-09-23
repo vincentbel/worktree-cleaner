@@ -12,7 +12,7 @@ See what is safe to remove, reclaim disk space, and keep branches and uncommitte
 work protected.
 
 <p align="center">
-  <strong><a href="https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.0/WorktreeCleaner-0.1.0.zip">Download Worktree Cleaner 0.1.0</a></strong>
+  <strong><a href="https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.1/WorktreeCleaner-0.1.1.dmg">Download Worktree Cleaner 0.1.1</a></strong>
 </p>
 
 <p align="center">
@@ -28,8 +28,8 @@ work protected.
   missing directories, and disk usage with a clear recommendation.
 - **🔍 Recursive discovery.** Add one or more scan directories and automatically find
   the Git repositories and worktrees inside them.
-- **🪶 Lightweight native app.** The signed and notarized universal macOS download is
-  only **3.74 MB**.
+- **🪶 Lightweight native app.** A signed and notarized universal macOS app,
+  distributed as a drag-to-install DMG.
 - **🧰 Repair stale registrations.** Prune records whose worktree directories no
   longer exist.
 
@@ -43,9 +43,9 @@ work protected.
 
 ## Install
 
-Download the signed and notarized
-[Worktree Cleaner 0.1.0 build][download], unzip it, and move
-`WorktreeCleaner.app` to Applications.
+Download the signed and notarized [Worktree Cleaner 0.1.1 DMG][download].
+Open it, drag `WorktreeCleaner.app` onto the **Applications** shortcut, then
+launch the app from Applications and eject the disk image.
 
 Requires **macOS 14 or later** and Git at `/usr/bin/git`.
 
@@ -63,4 +63,4 @@ Requires **macOS 14 or later** and Git at `/usr/bin/git`.
 - [Architecture and safety decisions](docs/architecture.md)
 - [Release process](docs/releasing.md)
 
-[download]: https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.0/WorktreeCleaner-0.1.0.zip
+[download]: https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.1/WorktreeCleaner-0.1.1.dmg
