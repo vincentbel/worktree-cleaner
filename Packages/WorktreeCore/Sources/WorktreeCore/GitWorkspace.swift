@@ -50,13 +50,15 @@ public struct GitWorkspace: Sendable {
   }
 
   public func diskUsage(
-    of snapshot: RepositorySnapshot
+    of snapshot: RepositorySnapshot,
+    excludingWorktreePaths: Set<URL> = []
   ) -> AsyncThrowingStream<DiskUsageUpdate, Error> {
     AsyncThrowingStream { continuation in
       let task = Task.detached {
         do {
           let measurer = DiskUsageMeasurer()
-          for worktree in snapshot.worktrees where !worktree.isPrunable {
+          for worktree in snapshot.worktrees
+          where !worktree.isPrunable && !excludingWorktreePaths.contains(worktree.path) {
             try Task.checkCancellation()
             let allocatedBytes = try measurer.allocatedSize(
               of: worktree.path,
@@ -89,14 +91,22 @@ public struct GitWorkspace: Sendable {
     else {
       throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
     }
-    switch (currentWorktree.cleanupRecommendation, policy) {
-    case (.cleanable, _), (.needsReview(reason: .notMerged), .allowUnmerged):
-      break
-    default:
-      throw GitWorkspaceError.worktreeNotCleanable(
-        currentWorktree.path,
-        currentWorktree.cleanupRecommendation
-      )
+    if worktree.isPrunable {
+      guard currentWorktree.canCleanUpRegistration,
+        !FileManager.default.fileExists(atPath: currentWorktree.path.path)
+      else {
+        throw GitWorkspaceError.worktreeRegistrationNotPrunable(currentWorktree.path)
+      }
+    } else {
+      switch (currentWorktree.cleanupRecommendation, policy) {
+      case (.cleanable, _), (.needsReview(reason: .notMerged), .allowUnmerged):
+        break
+      default:
+        throw GitWorkspaceError.worktreeNotCleanable(
+          currentWorktree.path,
+          currentWorktree.cleanupRecommendation
+        )
+      }
     }
 
     _ = try GitCommandRunner().runData(

@@ -47,7 +47,7 @@
   <key>sidebar.section.with_linked</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>
-    <string>有额外 Worktree · %#@projects@</string>
+    <string>有 linked worktree · %#@projects@</string>
     <key>projects</key>
     <dict>
       <key>NSStringFormatSpecTypeKey</key>
@@ -61,7 +61,7 @@
   <key>sidebar.section.main_only</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>
-    <string>只有主工作区 · %#@projects@</string>
+    <string>只有 main worktree · %#@projects@</string>
     <key>projects</key>
     <dict>
       <key>NSStringFormatSpecTypeKey</key>
@@ -72,7 +72,7 @@
       <string>%d 个项目</string>
     </dict>
   </dict>
-  <key>sidebar.extra_count_help</key>
+  <key>sidebar.linked_count_help</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>
     <string>%#@worktrees@</string>
@@ -83,10 +83,10 @@
       <key>NSStringFormatValueTypeKey</key>
       <string>d</string>
       <key>other</key>
-      <string>%d 个额外 worktree</string>
+      <string>%d 个 linked worktree</string>
     </dict>
   </dict>
-  <key>table.worktree_count</key>
+  <key>table.linked_worktree_count</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>
     <string>%#@worktrees@</string>
@@ -97,7 +97,7 @@
       <key>NSStringFormatValueTypeKey</key>
       <string>d</string>
       <key>other</key>
-      <string>%d 个 worktree</string>
+      <string>%d 个 linked worktree</string>
     </dict>
   </dict>
   <key>status.change_count</key>

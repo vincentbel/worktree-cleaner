@@ -44,8 +44,7 @@ derived_data="$output_root/DerivedData"
 archive_path="$output_root/WorktreeCleaner.xcarchive"
 export_directory="$output_root/export"
 updates_directory="$output_root/updates"
-notarization_archive="$output_root/WorktreeCleaner-notarization.zip"
-update_archive_name="WorktreeCleaner-${release_version}.zip"
+update_archive_name="WorktreeCleaner-${release_version}.dmg"
 update_archive="$updates_directory/$update_archive_name"
 
 if [[ -e "$output_root" ]]; then
@@ -99,16 +98,27 @@ if [[ ! -d "$application_path" ]]; then
 fi
 
 codesign --verify --deep --strict --verbose=2 "$application_path"
-ditto -c -k --sequesterRsrc --keepParent "$application_path" "$notarization_archive"
+signing_identity="$(
+  codesign --display --verbose=4 "$application_path" 2>&1 |
+    sed -n 's/^Authority=\(Developer ID Application:.*\)$/\1/p'
+)"
+if [[ -z "$signing_identity" ]]; then
+  echo "The exported app must be signed with a Developer ID Application identity." >&2
+  exit 78
+fi
+
+"$script_directory/package-dmg.sh" "$application_path" "$update_archive"
+codesign --sign "$signing_identity" --timestamp \
+  --identifier dev.worktreecleaner.app.dmg "$update_archive"
+codesign --verify --strict --verbose=2 "$update_archive"
 xcrun notarytool submit \
-  "$notarization_archive" \
+  "$update_archive" \
   --keychain-profile "$notary_profile" \
   --wait
-xcrun stapler staple "$application_path"
-xcrun stapler validate "$application_path"
+xcrun stapler staple "$update_archive"
+xcrun stapler validate "$update_archive"
+spctl --assess --type open --context context:primary-signature --verbose=4 "$update_archive"
 spctl --assess --type execute --verbose=4 "$application_path"
-
-ditto -c -k --sequesterRsrc --keepParent "$application_path" "$update_archive"
 
 generate_appcast="$(find "$derived_data/SourcePackages/artifacts" -type f -path '*/Sparkle/bin/generate_appcast' -print -quit)"
 if [[ -z "$generate_appcast" || ! -x "$generate_appcast" ]]; then

@@ -60,17 +60,17 @@
 "table.calculating_shared_git" = "正在计算共享 Git 数据…";
 "table.calculating_disk_usage" = "正在计算磁盘占用…";
 "table.disk_usage_measured_at" = "上次计算：%@";
-"column.worktree" = "Worktree";
+"column.branch" = "分支";
 "column.status" = "状态";
 "column.disk_usage" = "占用空间";
 "column.recommendation" = "建议";
 "column.path" = "路径";
 "column.actions" = "操作";
-"worktree.main" = "主工作区";
+"worktree.main" = "Main worktree";
 
 "action.delete" = "清理";
 "action.batch_cleanup" = "清理所选…";
-"action.batch_cleanup.help" = "清理选中的 Worktree 目录，不会删除对应 Git 分支";
+"action.batch_cleanup.help" = "清理选中的 worktree 目录或残留记录，不会删除 Git 分支";
 "action.delete.unmerged_help" = "清理这个尚未合入主分支的 Worktree；分支和已提交代码会保留";
 "action.delete.help" = "清理这个 Worktree 目录，不会删除 Git 分支";
 "action.prune_registration" = "清理残留记录";
@@ -83,15 +83,17 @@
 "action.recalculate_disk_usage.short" = "重新计算";
 "action.recalculate_disk_usage" = "重新计算磁盘占用";
 
-"batch.confirm.subtitle" = "所有选中的 Worktree 都没有未提交修改。清理只会删除 Worktree 目录，不会删除 Git 分支。";
+"batch.confirm.subtitle" = "清理会删除选中的 worktree 目录或残留记录。删除现存目录前会再次检查未提交修改，Git 分支都会保留。";
 "batch.confirm.breakdown.title" = "所选 Worktree";
 "batch.confirm.breakdown.merged" = "已合入主分支";
 "batch.confirm.breakdown.merged.detail" = "代码已经保存在主分支中";
 "batch.confirm.breakdown.unmerged" = "尚未合入主分支";
 "batch.confirm.breakdown.unmerged.detail" = "对应分支和已提交代码都会保留";
+"batch.confirm.breakdown.registrations" = "残留记录";
+"batch.confirm.breakdown.registrations.detail" = "仅清理选中的记录，分支和现存文件都会保留";
 "batch.selected_count" = "已选择 %d 个";
 "batch.select_all.label" = "选择全部可删除的 Worktree";
-"batch.select_all.help" = "选择或取消选择全部可删除的 Worktree，包括尚未合入项";
+"batch.select_all.help" = "选择或取消选择全部可清理的 worktree 和残留记录，包括尚未合入项";
 "batch.select_worktree.label" = "选择 %@ 进行批量清理";
 "batch.progress" = "正在清理 %d / %d…";
 "batch.result.failure" = "%@：%@";
@@ -104,7 +106,7 @@
 "status.clean" = "无未提交修改";
 "status.unavailable" = "状态不可用";
 
-"recommendation.keep_main" = "这是主工作区，不能清理";
+"recommendation.keep_main" = "这是 main worktree，不能清理";
 "recommendation.missing_path" = "可以清理残留记录";
 "recommendation.missing_path.detail" = "不会删除分支或任何现存文件";
 "recommendation.missing_path_locked" = "残留记录已锁定";

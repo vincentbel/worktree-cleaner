@@ -425,12 +425,7 @@ final class AppState {
       updateRepository(loadedSnapshot.repository)
       snapshotsByRepositoryID[repository.id] = loadedSnapshot
       snapshot = loadedSnapshot
-      diskUsageCache[repository.id] = nil
-      worktreeAllocatedBytes = [:]
-      sharedGitAllocatedBytes = nil
-      diskUsageMeasuredAt = nil
-      persistWorkspaceCache()
-      startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
+      refreshDiskUsageAfterCleanup(for: loadedSnapshot, loadID: loadID)
       if let branch = worktree.branch {
         successMessage = L10n.format(
           "success.removed_branch",
@@ -455,9 +450,12 @@ final class AppState {
       batchRemovalProgress == nil
     else { return }
 
-    let requestedIDs = Set(worktrees.map(\.id))
-    let candidates = currentSnapshot.worktrees.filter { worktree in
-      guard requestedIDs.contains(worktree.id) else { return false }
+    let registeredIDs = Set(currentSnapshot.worktrees.map(\.id))
+    let candidates = worktrees.filter { worktree in
+      guard registeredIDs.contains(worktree.id) else { return false }
+      if worktree.canCleanUpRegistration {
+        return true
+      }
       switch worktree.cleanupRecommendation {
       case .cleanable, .needsReview(reason: .notMerged):
         return true
@@ -517,12 +515,7 @@ final class AppState {
       updateRepository(loadedSnapshot.repository)
       snapshotsByRepositoryID[repository.id] = loadedSnapshot
       snapshot = loadedSnapshot
-      diskUsageCache[repository.id] = nil
-      worktreeAllocatedBytes = [:]
-      sharedGitAllocatedBytes = nil
-      diskUsageMeasuredAt = nil
-      persistWorkspaceCache()
-      startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
+      refreshDiskUsageAfterCleanup(for: loadedSnapshot, loadID: loadID)
 
       let removedSummary = L10n.plural("batch.result.removed", count: removedCount)
       if failures.isEmpty {
@@ -573,12 +566,7 @@ final class AppState {
       updateRepository(loadedSnapshot.repository)
       snapshotsByRepositoryID[repository.id] = loadedSnapshot
       snapshot = loadedSnapshot
-      diskUsageCache[repository.id] = nil
-      worktreeAllocatedBytes = [:]
-      sharedGitAllocatedBytes = nil
-      diskUsageMeasuredAt = nil
-      persistWorkspaceCache()
-      startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
+      refreshDiskUsageAfterCleanup(for: loadedSnapshot, loadID: loadID)
       successMessage = L10n.string("success.pruned_registrations")
     } catch {
       guard activeSnapshotLoadID == loadID else { return }
@@ -616,6 +604,36 @@ final class AppState {
     diskUsageMeasuredAt = cache.measuredAt
   }
 
+  private func refreshDiskUsageAfterCleanup(
+    for snapshot: RepositorySnapshot,
+    loadID: UUID
+  ) {
+    let currentPaths = Set(snapshot.worktrees.filter { !$0.isPrunable }.map(\.path))
+    worktreeAllocatedBytes = worktreeAllocatedBytes.filter { currentPaths.contains($0.key) }
+    if let sharedGitAllocatedBytes {
+      let cache = DiskUsageCacheEntry(
+        repositoryID: snapshot.repository.id,
+        measuredAt: diskUsageMeasuredAt ?? Date(),
+        worktreeAllocatedBytes: worktreeAllocatedBytes,
+        sharedGitAllocatedBytes: sharedGitAllocatedBytes
+      )
+      diskUsageCache[snapshot.repository.id] = cache
+      diskUsageMeasuredAt = cache.measuredAt
+    }
+    persistWorkspaceCache()
+
+    if sharedGitAllocatedBytes == nil
+      || !currentPaths.isSubset(of: Set(worktreeAllocatedBytes.keys))
+    {
+      startMeasuringDiskUsage(
+        for: snapshot,
+        loadID: loadID,
+        retaining: worktreeAllocatedBytes,
+        measuredAt: worktreeAllocatedBytes.isEmpty ? nil : diskUsageMeasuredAt
+      )
+    }
+  }
+
   private func persistWorkspaceCache() {
     cacheStore.save(
       WorkspaceCache(
@@ -630,7 +648,9 @@ final class AppState {
 
   private func startMeasuringDiskUsage(
     for snapshot: RepositorySnapshot,
-    loadID: UUID
+    loadID: UUID,
+    retaining worktreeMeasurements: [URL: Int64] = [:],
+    measuredAt: Date? = nil
   ) {
     diskUsageTask = Task {
       isMeasuringDiskUsage = true
@@ -641,9 +661,12 @@ final class AppState {
       }
 
       do {
-        var measuredWorktrees: [URL: Int64] = [:]
+        var measuredWorktrees = worktreeMeasurements
         var measuredSharedGit: Int64?
-        for try await update in workspace.diskUsage(of: snapshot) {
+        for try await update in workspace.diskUsage(
+          of: snapshot,
+          excludingWorktreePaths: Set(worktreeMeasurements.keys)
+        ) {
           guard activeSnapshotLoadID == loadID else { return }
           switch update {
           case .worktree(let path, let allocatedBytes):
@@ -661,7 +684,7 @@ final class AppState {
         }
         let cache = DiskUsageCacheEntry(
           repositoryID: snapshot.repository.id,
-          measuredAt: Date(),
+          measuredAt: measuredAt ?? Date(),
           worktreeAllocatedBytes: measuredWorktrees,
           sharedGitAllocatedBytes: measuredSharedGit
         )

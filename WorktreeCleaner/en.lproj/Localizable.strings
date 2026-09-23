@@ -60,7 +60,7 @@
 "table.calculating_shared_git" = "Calculating shared Git data…";
 "table.calculating_disk_usage" = "Calculating disk usage…";
 "table.disk_usage_measured_at" = "Last calculated %@";
-"column.worktree" = "Worktree";
+"column.branch" = "Branch";
 "column.status" = "Status";
 "column.disk_usage" = "Disk Usage";
 "column.recommendation" = "Recommendation";
@@ -70,7 +70,7 @@
 
 "action.delete" = "Clean Up";
 "action.batch_cleanup" = "Clean Up Selected…";
-"action.batch_cleanup.help" = "Remove the selected Worktree directories without deleting their Git branches";
+"action.batch_cleanup.help" = "Clean up selected worktree directories or leftover records without deleting Git branches";
 "action.delete.unmerged_help" = "Clean up this Worktree that has not been merged into the main branch; its branch and committed code will be kept";
 "action.delete.help" = "Clean up this Worktree directory without deleting Git branches";
 "action.prune_registration" = "Clean Up Leftover Record";
@@ -83,15 +83,17 @@
 "action.recalculate_disk_usage.short" = "Recalculate";
 "action.recalculate_disk_usage" = "Recalculate Disk Usage";
 
-"batch.confirm.subtitle" = "None of the selected Worktrees have uncommitted changes. Cleanup only removes their Worktree directories; it does not delete Git branches.";
+"batch.confirm.subtitle" = "Cleanup removes selected worktree directories or leftover records. Existing worktrees are checked for uncommitted changes before removal. Git branches are kept.";
 "batch.confirm.breakdown.title" = "Selected Worktrees";
 "batch.confirm.breakdown.merged" = "Merged into the main branch";
 "batch.confirm.breakdown.merged.detail" = "The code is already available from the main branch";
 "batch.confirm.breakdown.unmerged" = "Not merged into the main branch";
 "batch.confirm.breakdown.unmerged.detail" = "The corresponding branches and committed code will be kept";
+"batch.confirm.breakdown.registrations" = "Leftover records";
+"batch.confirm.breakdown.registrations.detail" = "Only the selected records are removed; branches and existing files are kept";
 "batch.selected_count" = "%d selected";
 "batch.select_all.label" = "Select All Removable Worktrees";
-"batch.select_all.help" = "Select or deselect all removable worktrees, including unmerged ones";
+"batch.select_all.help" = "Select or deselect all cleanable worktrees and leftover records, including unmerged worktrees";
 "batch.select_worktree.label" = "Select %@ for batch cleanup";
 "batch.progress" = "Cleaning %d of %d…";
 "batch.result.failure" = "%@: %@";
@@ -104,7 +106,7 @@
 "status.clean" = "No uncommitted changes";
 "status.unavailable" = "Status unavailable";
 
-"recommendation.keep_main" = "This is the main Worktree; it cannot be cleaned up";
+"recommendation.keep_main" = "This is the main worktree; it cannot be cleaned up";
 "recommendation.missing_path" = "Clean up leftover record";
 "recommendation.missing_path.detail" = "No branches or existing files will be deleted";
 "recommendation.missing_path_locked" = "Leftover record is locked";

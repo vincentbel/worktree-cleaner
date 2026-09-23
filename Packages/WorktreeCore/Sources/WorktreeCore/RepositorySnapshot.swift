@@ -13,6 +13,10 @@ public enum DiskUsageUpdate: Equatable, Sendable {
 public struct GitWorktree: Identifiable, Equatable, Sendable {
   public var id: URL { path }
 
+  public var canCleanUpRegistration: Bool {
+    isPrunable && !isMain && !isLocked
+  }
+
   public let path: URL
   public let head: String
   public let branch: String?

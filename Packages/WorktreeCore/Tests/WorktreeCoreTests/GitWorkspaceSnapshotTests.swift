@@ -24,6 +24,7 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     )
     XCTAssertEqual(snapshot.worktrees.map(\.branch), ["main", "agent-task"])
     XCTAssertEqual(snapshot.worktrees.map(\.isMain), [true, false])
+    XCTAssertEqual(snapshot.worktrees.map(\.canCleanUpRegistration), [false, false])
   }
 
   func testSnapshotReportsUntrackedFilesInLinkedWorktree() async throws {
@@ -126,6 +127,36 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     XCTAssertGreaterThan(try XCTUnwrap(sharedGitUsage), 0)
   }
 
+  func testDiskUsageSkipsWorktreesWithRetainedMeasurements() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
+    let repository = try XCTUnwrap(repositories.first)
+    let snapshot = try await workspace.snapshot(of: repository)
+    let linkedWorktree = try XCTUnwrap(snapshot.worktrees.first { !$0.isMain })
+    try FileManager.default.removeItem(at: fixture.linkedWorktree)
+    var measuredPaths: [URL] = []
+    var sharedGitBytes: Int64?
+
+    for try await update in workspace.diskUsage(
+      of: snapshot,
+      excludingWorktreePaths: [linkedWorktree.path]
+    ) {
+      switch update {
+      case .worktree(let path, _):
+        measuredPaths.append(path)
+      case .sharedGit(let bytes):
+        sharedGitBytes = bytes
+      }
+    }
+
+    XCTAssertEqual(measuredPaths, [snapshot.worktrees[0].path])
+    XCTAssertGreaterThan(try XCTUnwrap(sharedGitBytes), 0)
+  }
+
   func testSnapshotKeepsMissingWorktreeAsPrunableRecord() async throws {
     let fixture = try makeRepositoryWithLinkedWorktree()
     defer { try? FileManager.default.removeItem(at: fixture.base) }
@@ -142,7 +173,27 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
       snapshot.worktrees.first { !$0.isMain }
     )
     XCTAssertTrue(missingWorktree.isPrunable)
+    XCTAssertTrue(missingWorktree.canCleanUpRegistration)
     XCTAssertNotNil(missingWorktree.prunableReason)
     XCTAssertNil(missingWorktree.status)
+  }
+
+  func testSnapshotKeepsLockedMissingRegistrationIneligibleForCleanup() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try runGit(["worktree", "lock", fixture.linkedWorktree.path], in: fixture.repository)
+    try FileManager.default.removeItem(at: fixture.linkedWorktree)
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.base)
+    )
+    let repository = try XCTUnwrap(repositories.first)
+
+    let snapshot = try await workspace.snapshot(of: repository)
+
+    let missingWorktree = try XCTUnwrap(snapshot.worktrees.first { !$0.isMain })
+    XCTAssertTrue(missingWorktree.isPrunable)
+    XCTAssertTrue(missingWorktree.isLocked)
+    XCTAssertFalse(missingWorktree.canCleanUpRegistration)
   }
 }
