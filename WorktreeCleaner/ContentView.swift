@@ -387,7 +387,11 @@ private struct BatchRemovalRequest: Identifiable {
   }
 
   var mergedCount: Int {
-    worktrees.count - unmergedCount
+    worktrees.count - unmergedCount - registrationCount
+  }
+
+  var registrationCount: Int {
+    worktrees.count { $0.canCleanUpRegistration }
   }
 }
 
@@ -471,6 +475,21 @@ private struct BatchRemovalConfirmationSheet: View {
           tint: .orange
         )
       }
+
+      if request.registrationCount > 0 {
+        if request.mergedCount > 0 || request.unmergedCount > 0 {
+          Divider()
+            .padding(.leading, 34)
+        }
+
+        BatchRemovalBreakdownRow(
+          count: request.registrationCount,
+          title: L10n.string("batch.confirm.breakdown.registrations"),
+          detail: L10n.string("batch.confirm.breakdown.registrations.detail"),
+          systemImage: "eraser.fill",
+          tint: .green
+        )
+      }
     }
     .padding(14)
     .frame(maxWidth: .infinity, alignment: .leading)
@@ -545,7 +564,7 @@ private struct RepositoryRow: View {
           )
           .help(
             L10n.plural(
-              "sidebar.extra_count_help",
+              "sidebar.linked_count_help",
               count: repository.linkedWorktreeCount
             )
           )
@@ -599,7 +618,12 @@ private struct WorktreeTable: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack {
-        Text(L10n.plural("table.worktree_count", count: snapshot.worktrees.count))
+        Text(
+          L10n.plural(
+            "table.linked_worktree_count",
+            count: snapshot.repository.linkedWorktreeCount
+          )
+        )
         Text(
           L10n.format(
             "batch.selected_count",
@@ -811,6 +835,9 @@ private struct WorktreeTable: View {
   }
 
   private func isCleanable(_ worktree: GitWorktree) -> Bool {
+    if worktree.canCleanUpRegistration {
+      return true
+    }
     if case .cleanable = worktree.cleanupRecommendation {
       return true
     }
@@ -818,6 +845,9 @@ private struct WorktreeTable: View {
   }
 
   private func isBatchRemovable(_ worktree: GitWorktree) -> Bool {
+    if worktree.canCleanUpRegistration {
+      return true
+    }
     switch worktree.cleanupRecommendation {
     case .cleanable, .needsReview(reason: .notMerged):
       return true
@@ -860,7 +890,7 @@ private struct WorktreeGridHeader: View {
           .accessibilityLabel(L10n.string("batch.select_all.label"))
       }
       GridCell(width: WorktreeGridMetrics.worktreeWidth) {
-        Text(L10n.string("column.worktree"))
+        Text(L10n.string("column.branch"))
       }
       GridCell(width: WorktreeGridMetrics.statusWidth) { Text(L10n.string("column.status")) }
       GridCell(width: WorktreeGridMetrics.diskWidth) {

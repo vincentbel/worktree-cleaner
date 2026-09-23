@@ -82,7 +82,7 @@
       <string>%d projects</string>
     </dict>
   </dict>
-  <key>sidebar.extra_count_help</key>
+  <key>sidebar.linked_count_help</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>
     <string>%#@worktrees@</string>
@@ -93,12 +93,12 @@
       <key>NSStringFormatValueTypeKey</key>
       <string>d</string>
       <key>one</key>
-      <string>%d extra worktree</string>
+      <string>%d linked worktree</string>
       <key>other</key>
-      <string>%d extra worktrees</string>
+      <string>%d linked worktrees</string>
     </dict>
   </dict>
-  <key>table.worktree_count</key>
+  <key>table.linked_worktree_count</key>
   <dict>
     <key>NSStringLocalizedFormatKey</key>
     <string>%#@worktrees@</string>
@@ -109,9 +109,9 @@
       <key>NSStringFormatValueTypeKey</key>
       <string>d</string>
       <key>one</key>
-      <string>%d worktree</string>
+      <string>%d linked worktree</string>
       <key>other</key>
-      <string>%d worktrees</string>
+      <string>%d linked worktrees</string>
     </dict>
   </dict>
   <key>status.change_count</key>

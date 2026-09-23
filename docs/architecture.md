@@ -1,7 +1,7 @@
 # Worktree Cleaner Architecture
 
 Status: Accepted  
-Last updated: 2026-09-01
+Last updated: 2026-09-23
 
 ## Product goal
 
@@ -100,8 +100,8 @@ blocking snapshot.
 
 Inspection supplies `--expire now` when listing worktrees so a path deleted by
 another tool remains visible immediately as a prunable Git record. Such a record
-has no filesystem status or worktree disk measurement and is never eligible for
-normal worktree removal.
+has no filesystem status or worktree disk measurement. An unlocked linked
+worktree record is eligible for registration cleanup.
 
 The preferred cleanup target is `refs/remotes/origin/HEAD`. If Git cannot resolve
 it, the product must ask for a project-specific target instead of guessing
@@ -129,30 +129,37 @@ or dirty worktrees. An unavailable cleanup target is not enough evidence to
 offer this override.
 
 Removal uses `git worktree remove <absolute-path>` without `--force`. The first
-version never deletes the associated branch as a side effect. Missing/prunable
-administrative records are handled separately with `git worktree prune
---expire now`. Pruning requires an explicit confirmation, repeats inspection as
-a preflight, rejects a restored or locked target record, and may remove every
-stale unlocked registration in that repository. It never deletes branches or
-existing worktree files.
+version never deletes the associated branch as a side effect. Batch cleanup
+removes selected missing registrations individually with `git worktree remove
+<absolute-path>`. Registration cleanup repeats inspection and requires the
+selected directory to remain absent and the record to remain unlocked. It
+preserves unselected registrations, branches, and existing files.
 
-Batch removal selects worktrees currently classified as `cleanable` by default.
+The separate record-pruning action uses `git worktree prune --expire now`.
+Pruning requires an explicit confirmation, repeats inspection as a preflight,
+rejects a restored or locked target record, and may remove every stale unlocked
+registration in that repository. It never deletes branches or existing worktree
+files.
+
+Batch removal selects worktrees currently classified as `cleanable` and unlocked
+missing linked worktree registrations by default.
 Clean worktrees classified as `notMerged` can also be selected explicitly when
 a branch keeps their commits reachable. An unmerged detached HEAD receives its
 own non-removable recommendation until the user creates a branch. Other blocked
-worktrees, the main worktree, unavailable cleanup targets, and stale
-registrations cannot be selected for the batch. The main table keeps status,
+worktrees, the main worktree, and existing worktrees with unavailable cleanup
+targets cannot be selected for the batch. The main table keeps status,
 measured size, recommendation, and path visible while the user makes the
 selection. A stronger destructive confirmation presents the total only in its
-title, then shows merged and unmerged counts as a single vertical breakdown so
-the categories cannot be mistaken for additional selected items. User-facing
+title, then shows merged, unmerged, and leftover-record counts as a single
+vertical breakdown so the categories cannot be mistaken for additional selected
+items. User-facing
 copy distinguishes uncommitted changes, which would be lost with their
 directory, from committed-but-unmerged code that remains reachable from its
 branch.
 Removal runs sequentially and repeats the applicable
-clean-or-unmerged preflight immediately before every item; a failed item is
-reported and skipped without stopping the remaining confirmed removals. Git
-branches are preserved for every successful item.
+directory-removal or registration-cleanup preflight immediately before every
+item; a failed item is reported and skipped without stopping the remaining
+confirmed removals. Git branches are preserved for every successful item.
 
 This policy is intentionally conservative:
 
@@ -178,7 +185,12 @@ Display working-copy disk usage separately from shared Git data:
   and let the user explicitly request an earlier recalculation.
 - Persist disk usage separately from Git status. Switching projects or restarting
   the app may refresh Git status in the background without traversing every file
-  again; removal still invalidates the affected repository's disk cache.
+  again. Single removal, batch cleanup, and record pruning discard measurements
+  only for worktrees absent from the resulting snapshot or marked as prunable.
+  Remaining measurements, shared Git size, and their original timestamp are
+  retained, and the repository total is updated from those retained values.
+  If cleanup interrupts a measurement, it resumes only for unmeasured worktrees
+  and shared Git data. Explicit recalculation still measures every current worktree.
 - A large size can raise recommendation priority but can never make a worktree
   eligible for removal by itself.
 
@@ -215,9 +227,10 @@ The primary window uses a two-column `NavigationSplitView`:
   all-roots scope. The adjacent add button remains a shortcut for choosing a new
   base directory, while the sidebar footer opens directory settings.
 - The project table has a selection column for batch cleanup. Cleanable
-  worktrees are selected by default, clean branch-backed unmerged worktrees are
-  selectable but initially unchecked, and ineligible rows remain disabled. The selected count
-  and red delete action sit together on the leading side of the detail header;
+  worktrees and unlocked leftover registrations are selected by default, clean
+  branch-backed unmerged worktrees are selectable but initially unchecked, and
+  ineligible rows remain disabled. The selected count and red delete action sit
+  together on the leading side of the detail header;
   a visual confirmation sheet precedes deletion, which then reports sequential
   progress and a final removed/skipped summary.
 - Settings: a native tabbed settings window shares the application's single
