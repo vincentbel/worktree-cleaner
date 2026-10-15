@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 import WorktreeCore
@@ -691,7 +692,8 @@ private struct WorktreeTable: View {
   let onBatchRemove: ([GitWorktree]) -> Void
   let onPrune: (GitWorktree) -> Void
 
-  @State private var selectedBatchRemovalIDs: Set<GitWorktree.ID> = []
+  @State private var batchSelectionState = WorktreeBatchSelection()
+  @State private var sortOrder = WorktreeSortOrder()
 
   var body: some View {
     VStack(spacing: 0) {
@@ -790,11 +792,17 @@ private struct WorktreeTable: View {
               VStack(spacing: 0) {
                 WorktreeGridHeader(
                   selections: batchRemovalSelectableWorktrees.map {
-                    batchSelection(for: $0)
+                    headerSelection(for: $0)
                   },
-                  isSelectionDisabled: isRemovalInProgress || batchRemovalSelectableIDs.isEmpty
+                  isSelectionDisabled: isRemovalInProgress || batchRemovalSelectableIDs.isEmpty,
+                  sortOrder: sortOrder,
+                  isSortingDisabled: isRemovalInProgress,
+                  onSort: { column in
+                    sortOrder.toggle(column)
+                    batchSelectionState.resetAnchor()
+                  }
                 )
-                ForEach(Array(snapshot.worktrees.enumerated()), id: \.element.id) {
+                ForEach(Array(displayedWorktrees.enumerated()), id: \.element.id) {
                   index, worktree in
                   WorktreeGridRow(
                     worktree: worktree,
@@ -827,7 +835,7 @@ private struct WorktreeTable: View {
                 )
                 .background(.bar)
 
-              ForEach(Array(snapshot.worktrees.enumerated()), id: \.element.id) {
+              ForEach(Array(displayedWorktrees.enumerated()), id: \.element.id) {
                 index, worktree in
                 WorktreeActionRow(
                   worktree: worktree,
@@ -851,18 +859,24 @@ private struct WorktreeTable: View {
     }
     .navigationTitle(snapshot.repository.name)
     .onAppear {
-      selectedBatchRemovalIDs = defaultBatchRemovalIDs
+      batchSelectionState.selectedIDs = defaultBatchRemovalIDs
+      batchSelectionState.resetAnchor()
     }
     .onChange(of: snapshot.repository.id) {
-      selectedBatchRemovalIDs = defaultBatchRemovalIDs
+      batchSelectionState.selectedIDs = defaultBatchRemovalIDs
+      batchSelectionState.resetAnchor()
     }
     .onChange(of: batchRemovalSelectableIDs) { _, currentIDs in
-      selectedBatchRemovalIDs.formIntersection(currentIDs)
+      batchSelectionState.retain(currentIDs)
     }
     .onChange(of: defaultBatchRemovalIDs) { previousIDs, currentIDs in
-      selectedBatchRemovalIDs.subtract(previousIDs.subtracting(currentIDs))
-      selectedBatchRemovalIDs.formUnion(currentIDs.subtracting(previousIDs))
+      batchSelectionState.selectedIDs.subtract(previousIDs.subtracting(currentIDs))
+      batchSelectionState.selectedIDs.formUnion(currentIDs.subtracting(previousIDs))
     }
+  }
+
+  private var displayedWorktrees: [GitWorktree] {
+    sortOrder.sorted(snapshot.worktrees, allocatedBytes: worktreeAllocatedBytes)
   }
 
   private var defaultBatchRemovalWorktrees: [GitWorktree] {
@@ -874,7 +888,7 @@ private struct WorktreeTable: View {
   }
 
   private var batchRemovalSelectableWorktrees: [GitWorktree] {
-    snapshot.worktrees.filter(isBatchRemovable)
+    displayedWorktrees.filter(isBatchRemovable)
   }
 
   private var batchRemovalSelectableIDs: Set<GitWorktree.ID> {
@@ -882,7 +896,7 @@ private struct WorktreeTable: View {
   }
 
   private var selectedBatchRemovalWorktrees: [GitWorktree] {
-    batchRemovalSelectableWorktrees.filter { selectedBatchRemovalIDs.contains($0.id) }
+    batchRemovalSelectableWorktrees.filter { batchSelectionState.selectedIDs.contains($0.id) }
   }
 
   private var batchRemovalButtonTitle: String {
@@ -901,14 +915,23 @@ private struct WorktreeTable: View {
 
   private func batchSelection(for worktree: GitWorktree) -> Binding<Bool> {
     Binding(
-      get: { selectedBatchRemovalIDs.contains(worktree.id) },
+      get: { batchSelectionState.selectedIDs.contains(worktree.id) },
       set: { isSelected in
-        if isSelected {
-          selectedBatchRemovalIDs.insert(worktree.id)
-        } else {
-          selectedBatchRemovalIDs.remove(worktree.id)
-        }
+        batchSelectionState.set(
+          worktree.id,
+          selected: isSelected,
+          extendingRange: (NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags).contains(
+            .shift),
+          orderedSelectableIDs: batchRemovalSelectableWorktrees.map(\.id)
+        )
       }
+    )
+  }
+
+  private func headerSelection(for worktree: GitWorktree) -> Binding<Bool> {
+    Binding(
+      get: { batchSelectionState.selectedIDs.contains(worktree.id) },
+      set: { batchSelectionState.setAll($0, selectableIDs: [worktree.id]) }
     )
   }
 
@@ -946,16 +969,21 @@ private enum WorktreeGridMetrics {
   static let worktreeWidth: CGFloat = 260
   static let statusWidth: CGFloat = 160
   static let diskWidth: CGFloat = 110
+  static let commitDateWidth: CGFloat = 160
   static let recommendationWidth: CGFloat = 330
   static let pathWidth: CGFloat = 420
   static let actionWidth: CGFloat = 84
   static let contentWidth =
-    selectionWidth + worktreeWidth + statusWidth + diskWidth + recommendationWidth + pathWidth
+    selectionWidth + worktreeWidth + statusWidth + diskWidth + commitDateWidth
+    + recommendationWidth + pathWidth
 }
 
 private struct WorktreeGridHeader: View {
   let selections: [Binding<Bool>]
   let isSelectionDisabled: Bool
+  let sortOrder: WorktreeSortOrder
+  let isSortingDisabled: Bool
+  let onSort: (WorktreeSortColumn) -> Void
 
   var body: some View {
     HStack(spacing: 0) {
@@ -968,22 +996,51 @@ private struct WorktreeGridHeader: View {
           .accessibilityLabel(L10n.string("batch.select_all.label"))
       }
       GridCell(width: WorktreeGridMetrics.worktreeWidth) {
-        Text(L10n.string("column.branch"))
+        sortButton(.branch)
       }
       GridCell(width: WorktreeGridMetrics.statusWidth) { Text(L10n.string("column.status")) }
       GridCell(width: WorktreeGridMetrics.diskWidth) {
-        Text(L10n.string("column.disk_usage"))
+        sortButton(.diskUsage)
+      }
+      GridCell(width: WorktreeGridMetrics.commitDateWidth) {
+        sortButton(.commitDate)
       }
       GridCell(width: WorktreeGridMetrics.recommendationWidth) {
         Text(L10n.string("column.recommendation"))
       }
-      GridCell(width: WorktreeGridMetrics.pathWidth) { Text(L10n.string("column.path")) }
+      GridCell(width: WorktreeGridMetrics.pathWidth) { sortButton(.path) }
     }
     .font(.caption)
     .fontWeight(.medium)
     .foregroundStyle(.secondary)
     .frame(height: WorktreeGridMetrics.headerHeight)
     .background(.bar)
+  }
+
+  private func sortButton(_ column: WorktreeSortColumn) -> some View {
+    Button {
+      onSort(column)
+    } label: {
+      HStack(spacing: 4) {
+        Text(L10n.string(column.titleKey))
+        if sortOrder.column == column {
+          Image(systemName: sortOrder.ascending ? "chevron.up" : "chevron.down")
+            .font(.system(size: 8, weight: .semibold))
+            .accessibilityHidden(true)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .disabled(isSortingDisabled)
+    .help(L10n.format("sort.column.help", L10n.string(column.titleKey)))
+    .accessibilityLabel(L10n.string(column.titleKey))
+    .accessibilityValue(
+      sortOrder.column == column
+        ? L10n.string(sortOrder.ascending ? "sort.ascending" : "sort.descending") : ""
+    )
+    .accessibilityIdentifier("sort.\(column.rawValue)")
   }
 }
 
@@ -1034,6 +1091,22 @@ private struct WorktreeGridRow: View {
           allocatedBytes: allocatedBytes,
           isMeasuring: isMeasuringDiskUsage
         )
+      }
+
+      GridCell(width: WorktreeGridMetrics.commitDateWidth) {
+        if let date = worktree.commitDate {
+          Text(date.formatted(.dateTime.year().month(.twoDigits).day(.twoDigits).hour().minute()))
+            .font(.callout.monospacedDigit())
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .help(
+              L10n.string("table.last_commit.help") + "\n"
+                + date.formatted(date: .complete, time: .complete)
+            )
+        } else {
+          Text("—")
+            .foregroundStyle(.tertiary)
+        }
       }
 
       GridCell(width: WorktreeGridMetrics.recommendationWidth) {

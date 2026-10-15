@@ -19,6 +19,7 @@ public struct GitWorktree: Identifiable, Equatable, Sendable {
 
   public let path: URL
   public let head: String
+  public let commitDate: Date?
   public let branch: String?
   public let isDetached: Bool
   public let isMain: Bool
@@ -40,10 +41,12 @@ public struct GitWorktree: Identifiable, Equatable, Sendable {
     isPrunable: Bool,
     prunableReason: String?,
     status: WorktreeStatus?,
-    cleanupRecommendation: CleanupRecommendation
+    cleanupRecommendation: CleanupRecommendation,
+    commitDate: Date? = nil
   ) {
     self.path = path
     self.head = head
+    self.commitDate = commitDate
     self.branch = branch
     self.isDetached = isDetached
     self.isMain = isMain

@@ -1,7 +1,7 @@
 # Worktree Cleaner Architecture
 
 Status: Accepted  
-Last updated: 2026-09-23
+Last updated: 2026-10-15
 
 ## Product goal
 
@@ -105,6 +105,13 @@ remain visible immediately. A directory or its `.git` file may be missing; a
 prunable record does not imply that the directory and its files are gone. Such a
 record has no filesystem status or worktree disk measurement. An unlocked linked
 worktree record is eligible for registration cleanup.
+
+Snapshots include the committer timestamp of each current HEAD. Unique HEADs
+are read in bounded batches with `git log --no-walk --ignore-missing`, so shared
+commits are resolved once and the app does not spawn a query for every row.
+Unavailable commit objects produce an unknown date for the affected rows.
+Uncommitted edits do not change this timestamp. Targeted removal preflights
+do not request this display metadata.
 
 The preferred cleanup target is `refs/remotes/origin/HEAD`. If Git cannot resolve
 it, the product must ask for a project-specific target instead of guessing
@@ -227,6 +234,12 @@ The primary window uses a two-column `NavigationSplitView`:
   recommendation, and actions.
 - Worktree data can scroll horizontally, while a narrow trailing action column
   stays visible at the right edge for path actions and removal progress.
+- The Last Commit column displays each HEAD's committer time in the local time
+  zone, with the precise timestamp and its meaning in a tooltip. Clicking the
+  Last Commit, Disk Usage, Branch, or Path header selects that sort or reverses its
+  direction. The default is oldest commit first. The main worktree stays first,
+  unknown dates and sizes stay last in both directions, and equal values use a
+  stable branch/path order. Data rows and the action column share the same order.
 - Path actions allow copying and opening through Finder or detected developer
   applications. Detection checks system, `/Applications`, and the user's
   `Applications` directory; opening uses native `NSWorkspace` and application
@@ -248,6 +261,12 @@ The primary window uses a two-column `NavigationSplitView`:
   progress and a final removed/skipped summary. Batch results use a sheet with
   bounded, scrollable failure details and a persistent dismissal button. The
   result title distinguishes full success, partial success, and full failure.
+- A normal checkbox click records the range anchor. Shift-click applies the
+  clicked checkbox's selected state to the inclusive range in the current
+  display order, skipping ineligible rows and preserving selections outside the
+  range. Reversing a range works the same way. Changing sort preserves selections
+  by worktree identity and resets the anchor. The select-all control also resets
+  the anchor; sorting and selection are disabled during cleanup.
 - Settings: a native tabbed settings window shares the application's single
   `AppState`. Its directory tab adds and removes configured roots and shows each
   root's project count, scan progress, or error. Its update tab binds directly

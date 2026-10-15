@@ -36,7 +36,8 @@ public struct GitWorkspace: Sendable {
     let worktrees = try parseWorktrees(
       output,
       repository: repository,
-      cleanupTarget: cleanupTarget
+      cleanupTarget: cleanupTarget,
+      commitDates: commitDates(in: output, repository: repository)
     )
     let refreshedRepository = GitRepository(
       workingTreeURL: repository.workingTreeURL,
@@ -319,12 +320,37 @@ public struct GitWorkspace: Sendable {
     )
   }
 
+  private func commitDates(in worktreeList: Data, repository: GitRepository) -> [String: Date] {
+    let heads = Set(
+      String(decoding: worktreeList, as: UTF8.self).components(separatedBy: "\0")
+        .filter { $0.hasPrefix("HEAD ") }
+        .map { String($0.dropFirst("HEAD ".count)) }
+    ).sorted()
+    var dates: [String: Date] = [:]
+    for start in stride(from: 0, to: heads.count, by: 128) {
+      let batch = Array(heads[start..<min(start + 128, heads.count)])
+      guard
+        let output = try? GitCommandRunner().run(
+          ["log", "--no-walk=unsorted", "--ignore-missing", "--format=%H %ct"] + batch,
+          in: repository.workingTreeURL
+        )
+      else { continue }
+      for line in output.split(separator: "\n") {
+        let fields = line.split(separator: " ")
+        guard fields.count == 2, let timestamp = Int64(fields[1]) else { continue }
+        dates[String(fields[0])] = Date(timeIntervalSince1970: TimeInterval(timestamp))
+      }
+    }
+    return dates
+  }
+
   private func parseWorktrees(
     _ data: Data,
     repository: GitRepository,
     cleanupTarget: String?,
     worktreeID: GitWorktree.ID? = nil,
-    includeStatus: Bool = true
+    includeStatus: Bool = true,
+    commitDates: [String: Date] = [:]
   ) throws -> [GitWorktree] {
     let fields = String(decoding: data, as: UTF8.self)
       .components(separatedBy: "\0")
@@ -384,7 +410,8 @@ public struct GitWorkspace: Sendable {
                   status: status,
                   target: cleanupTarget,
                   repository: repository
-                )
+                ),
+                commitDate: commitDates[head]
               )
             )
           }
