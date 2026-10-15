@@ -1008,7 +1008,7 @@ private struct WorktreeGridHeader: View {
       GridCell(width: WorktreeGridMetrics.recommendationWidth) {
         Text(L10n.string("column.recommendation"))
       }
-      GridCell(width: WorktreeGridMetrics.pathWidth) { Text(L10n.string("column.path")) }
+      GridCell(width: WorktreeGridMetrics.pathWidth) { sortButton(.path) }
     }
     .font(.caption)
     .fontWeight(.medium)

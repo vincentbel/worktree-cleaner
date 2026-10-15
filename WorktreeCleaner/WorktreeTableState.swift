@@ -5,12 +5,14 @@ enum WorktreeSortColumn: String {
   case commitDate
   case diskUsage
   case branch
+  case path
 
   var titleKey: String {
     switch self {
     case .commitDate: "column.last_commit"
     case .diskUsage: "column.disk_usage"
     case .branch: "column.branch"
+    case .path: "column.path"
     }
   }
 }
@@ -40,6 +42,11 @@ struct WorktreeSortOrder: Equatable {
       case .branch:
         let order = (lhs.branch ?? "Detached HEAD").localizedStandardCompare(
           rhs.branch ?? "Detached HEAD")
+        comparison =
+          order == .orderedSame
+          ? nil : (ascending ? order == .orderedAscending : order == .orderedDescending)
+      case .path:
+        let order = lhs.path.path.localizedStandardCompare(rhs.path.path)
         comparison =
           order == .orderedSame
           ? nil : (ascending ? order == .orderedAscending : order == .orderedDescending)

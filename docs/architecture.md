@@ -236,7 +236,7 @@ The primary window uses a two-column `NavigationSplitView`:
   stays visible at the right edge for path actions and removal progress.
 - The Last Commit column displays each HEAD's committer time in the local time
   zone, with the precise timestamp and its meaning in a tooltip. Clicking the
-  Last Commit, Disk Usage, or Branch header selects that sort or reverses its
+  Last Commit, Disk Usage, Branch, or Path header selects that sort or reverses its
   direction. The default is oldest commit first. The main worktree stays first,
   unknown dates and sizes stay last in both directions, and equal values use a
   stable branch/path order. Data rows and the action column share the same order.
