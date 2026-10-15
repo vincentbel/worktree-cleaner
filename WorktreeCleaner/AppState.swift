@@ -432,7 +432,8 @@ final class AppState {
     }
 
     do {
-      let loadedSnapshot = try await workspace.remove(worktree, from: repository)
+      try await workspace.remove(worktree, from: repository)
+      let loadedSnapshot = try await workspace.snapshot(of: repository)
       guard activeSnapshotLoadID == loadID,
         selectedRepositoryID == repository.id
       else { return }
@@ -509,15 +510,7 @@ final class AppState {
       )
       removingWorktreeID = worktree.id
       do {
-        if worktree.isPrunable {
-          try await workspace.removeRegistration(worktree, from: repository)
-        } else {
-          _ = try await workspace.remove(
-            worktree,
-            from: repository,
-            policy: .allowUnmerged
-          )
-        }
+        try await workspace.remove(worktree, from: repository, policy: .allowUnmerged)
         removedCount += 1
       } catch {
         let label = worktree.branch ?? worktree.path.lastPathComponent

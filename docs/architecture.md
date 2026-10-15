@@ -167,10 +167,12 @@ Removal runs sequentially and repeats the applicable
 directory-removal or registration-cleanup preflight immediately before every
 item; a failed item is reported and skipped without stopping the remaining
 confirmed removals. Git branches are preserved for every successful item.
-Registration-only cleanup reads the current Git worktree list and checks only
-the selected record's path and lock state. It does not inspect working-copy
-status or ancestry. The batch refreshes the repository snapshot once after the
-loop, so other worktrees are inspected once rather than twice per removed record.
+Each removal reads the current Git worktree list and inspects only the selected
+target. Existing worktrees receive fresh status and ancestry checks;
+registration-only cleanup checks the record's path and lock state. Removal
+completes the mutation without producing a repository snapshot. The UI refreshes
+once after a single removal or after the entire batch, so unrelated worktrees
+are inspected once rather than twice per removed item.
 
 This policy is intentionally conservative:
 

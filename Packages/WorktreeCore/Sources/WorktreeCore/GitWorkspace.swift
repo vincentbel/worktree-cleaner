@@ -85,15 +85,24 @@ public struct GitWorkspace: Sendable {
     _ worktree: GitWorktree,
     from repository: GitRepository,
     policy: WorktreeRemovalPolicy = .allowUnmerged
-  ) async throws -> RepositorySnapshot {
+  ) async throws {
     if worktree.isPrunable {
       try await removeRegistration(worktree, from: repository)
-      return try await snapshot(of: repository)
+      return
     }
 
-    let currentSnapshot = try await snapshot(of: repository)
-    guard let currentWorktree = currentSnapshot.worktrees.first(where: { $0.id == worktree.id })
-    else {
+    let runner = GitCommandRunner()
+    let output = try runner.runData(
+      ["worktree", "list", "--porcelain", "-z", "--expire", "now"],
+      in: repository.workingTreeURL
+    )
+    let worktrees = try parseWorktrees(
+      output,
+      repository: repository,
+      cleanupTarget: try cleanupTarget(in: repository, using: runner),
+      worktreeID: worktree.id
+    )
+    guard let currentWorktree = worktrees.first else {
       throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
     }
     switch (currentWorktree.cleanupRecommendation, policy) {
@@ -110,7 +119,6 @@ public struct GitWorkspace: Sendable {
       ["worktree", "remove", currentWorktree.path.path],
       in: repository.workingTreeURL
     )
-    return try await snapshot(of: repository)
   }
 
   public func removeRegistration(
@@ -125,7 +133,8 @@ public struct GitWorkspace: Sendable {
       output,
       repository: repository,
       cleanupTarget: nil,
-      registrationID: worktree.id
+      worktreeID: worktree.id,
+      includeStatus: false
     )
     guard let currentWorktree = registrations.first else {
       throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
@@ -314,7 +323,8 @@ public struct GitWorkspace: Sendable {
     _ data: Data,
     repository: GitRepository,
     cleanupTarget: String?,
-    registrationID: GitWorktree.ID? = nil
+    worktreeID: GitWorktree.ID? = nil,
+    includeStatus: Bool = true
   ) throws -> [GitWorktree] {
     let fields = String(decoding: data, as: UTF8.self)
       .components(separatedBy: "\0")
@@ -335,14 +345,14 @@ public struct GitWorkspace: Sendable {
           let worktreeURL = canonicalURL(URL(filePath: path))
           let isMain = isFirstWorktree
           isFirstWorktree = false
-          if registrationID == nil || worktreeURL == registrationID {
+          if worktreeID == nil || worktreeURL == worktreeID {
             let pathExists = FileManager.default.fileExists(atPath: worktreeURL.path)
             let gitFileExists = FileManager.default.fileExists(
               atPath: worktreeURL.appending(path: ".git").path
             )
             isPrunable = isPrunable || !pathExists || !gitFileExists
             let status: WorktreeStatus?
-            if isPrunable || registrationID != nil {
+            if isPrunable || !includeStatus {
               status = nil
             } else {
               let statusOutput = try GitCommandRunner().runData(

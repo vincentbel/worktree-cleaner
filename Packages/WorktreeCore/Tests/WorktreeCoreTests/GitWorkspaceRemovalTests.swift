@@ -17,11 +17,12 @@ final class GitWorkspaceRemovalTests: XCTestCase {
       initialSnapshot.worktrees.first { !$0.isMain }
     )
 
-    let updatedSnapshot = try await workspace.remove(
+    try await workspace.remove(
       linkedWorktree,
       from: repository,
       policy: .cleanableOnly
     )
+    let updatedSnapshot = try await workspace.snapshot(of: repository)
 
     XCTAssertEqual(updatedSnapshot.worktrees.count, 1)
     XCTAssertTrue(updatedSnapshot.worktrees[0].isMain)
@@ -46,7 +47,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     )
 
     do {
-      _ = try await workspace.remove(linkedWorktree, from: repository)
+      try await workspace.remove(linkedWorktree, from: repository)
       XCTFail("Expected removal to fail after the worktree became dirty")
     } catch let error as GitWorkspaceError {
       guard case .worktreeNotCleanable(let path, let recommendation) = error else {
@@ -61,6 +62,91 @@ final class GitWorkspaceRemovalTests: XCTestCase {
 
     let currentSnapshot = try await workspace.snapshot(of: repository)
     XCTAssertEqual(currentSnapshot.worktrees.count, 2)
+  }
+
+  func testRemoveWorksWhenAnotherCheckoutIsUnreadable() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try configureRemoteDefaultBranch(in: fixture.repository)
+    let otherWorktree = fixture.base.appending(path: "other-agent")
+    try runGit(
+      ["worktree", "add", "--quiet", "-b", "other-agent", otherWorktree.path],
+      in: fixture.repository
+    )
+    let otherGitFile = otherWorktree.appending(path: ".git")
+    let otherGitContents = try Data(contentsOf: otherGitFile)
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let worktree = try XCTUnwrap(initialSnapshot.worktrees.first { $0.branch == "agent-task" })
+    let unavailableGitContents = Data(
+      "gitdir: \(fixture.base.appending(path: "unavailable").path)\n".utf8
+    )
+    try unavailableGitContents.write(to: otherGitFile)
+
+    try await workspace.remove(worktree, from: repository, policy: .cleanableOnly)
+
+    XCTAssertFalse(FileManager.default.fileExists(atPath: fixture.linkedWorktree.path))
+    XCTAssertEqual(try Data(contentsOf: otherGitFile), unavailableGitContents)
+    try runGit(["show-ref", "--verify", "refs/heads/agent-task"], in: fixture.repository)
+    try otherGitContents.write(to: otherGitFile)
+    let updatedSnapshot = try await workspace.snapshot(of: repository)
+    XCTAssertEqual(updatedSnapshot.worktrees.map(\.branch), ["main", "other-agent"])
+  }
+
+  func testRemoveRefusesMainWorktree() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let mainWorktree = try XCTUnwrap(initialSnapshot.worktrees.first { $0.isMain })
+
+    do {
+      try await workspace.remove(mainWorktree, from: repository)
+      XCTFail("Expected removal to preserve the main worktree")
+    } catch let error as GitWorkspaceError {
+      XCTAssertEqual(error, .worktreeNotCleanable(mainWorktree.path, .protectedMainWorktree))
+    }
+
+    let updatedSnapshot = try await workspace.snapshot(of: repository)
+    XCTAssertEqual(updatedSnapshot, initialSnapshot)
+  }
+
+  func testRemoveRefusesWorktreeLockedAfterSelection() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try configureRemoteDefaultBranch(in: fixture.repository)
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let worktree = try XCTUnwrap(initialSnapshot.worktrees.first { !$0.isMain })
+    try runGit(
+      ["worktree", "lock", "--reason", "Agent is running", worktree.path.path],
+      in: fixture.repository
+    )
+
+    do {
+      try await workspace.remove(worktree, from: repository)
+      XCTFail("Expected removal to preserve the locked worktree")
+    } catch let error as GitWorkspaceError {
+      XCTAssertEqual(
+        error,
+        .worktreeNotCleanable(
+          worktree.path, .blocked(reasons: [.locked(reason: "Agent is running")]))
+      )
+    }
+
+    let updatedSnapshot = try await workspace.snapshot(of: repository)
+    let lockedWorktree = try XCTUnwrap(updatedSnapshot.worktrees.first { !$0.isMain })
+    XCTAssertTrue(lockedWorktree.isLocked)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: worktree.path.path))
   }
 
   func testRemoveDeletesCleanLinkedWorktreeWhoseCommitIsNotMerged() async throws {
@@ -93,11 +179,12 @@ final class GitWorkspaceRemovalTests: XCTestCase {
       .needsReview(reason: .notMerged(target: "origin/main"))
     )
 
-    let updatedSnapshot = try await workspace.remove(
+    try await workspace.remove(
       linkedWorktree,
       from: repository,
       policy: .allowUnmerged
     )
+    let updatedSnapshot = try await workspace.snapshot(of: repository)
 
     XCTAssertEqual(updatedSnapshot.worktrees.count, 1)
     XCTAssertTrue(updatedSnapshot.worktrees[0].isMain)
@@ -130,7 +217,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     )
 
     do {
-      _ = try await workspace.remove(
+      try await workspace.remove(
         linkedWorktree,
         from: repository,
         policy: .cleanableOnly
@@ -183,7 +270,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     )
 
     do {
-      _ = try await workspace.remove(
+      try await workspace.remove(
         linkedWorktree,
         from: repository,
         policy: .allowUnmerged
@@ -224,11 +311,12 @@ final class GitWorkspaceRemovalTests: XCTestCase {
       initialSnapshot.worktrees.first { $0.branch == "agent-task" }
     )
 
-    let updatedSnapshot = try await workspace.remove(
+    try await workspace.remove(
       selectedWorktree,
       from: repository,
       policy: .cleanableOnly
     )
+    let updatedSnapshot = try await workspace.snapshot(of: repository)
 
     XCTAssertEqual(updatedSnapshot.worktrees.map(\.branch), ["main", "other-agent"])
     XCTAssertEqual(updatedSnapshot.repository.linkedWorktreeCount, 1)
@@ -238,7 +326,8 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     let otherRecord = try XCTUnwrap(
       initialSnapshot.worktrees.first { $0.branch == "other-agent" }
     )
-    let finalSnapshot = try await workspace.remove(otherRecord, from: repository)
+    try await workspace.remove(otherRecord, from: repository)
+    let finalSnapshot = try await workspace.snapshot(of: repository)
     XCTAssertEqual(finalSnapshot.worktrees.map(\.branch), ["main"])
     XCTAssertEqual(finalSnapshot.repository.linkedWorktreeCount, 0)
   }
@@ -259,7 +348,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     try FileManager.default.moveItem(at: savedDirectory, to: fixture.linkedWorktree)
 
     do {
-      _ = try await workspace.remove(missingWorktree, from: repository)
+      try await workspace.remove(missingWorktree, from: repository)
       XCTFail("Expected record cleanup to preserve the restored directory")
     } catch let error as GitWorkspaceError {
       switch error {
@@ -297,7 +386,8 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     let worktree = try XCTUnwrap(initialSnapshot.worktrees.first { $0.branch == "agent-task" })
     XCTAssertTrue(worktree.canCleanUpRegistration)
 
-    let updatedSnapshot = try await workspace.remove(worktree, from: repository)
+    try await workspace.remove(worktree, from: repository)
+    let updatedSnapshot = try await workspace.snapshot(of: repository)
 
     XCTAssertEqual(updatedSnapshot.worktrees.map(\.branch), ["main", "other-agent"])
     XCTAssertEqual(try Data(contentsOf: notes), contents)
@@ -320,7 +410,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     try gitFileContents.write(to: gitFile)
 
     do {
-      _ = try await workspace.remove(worktree, from: repository)
+      try await workspace.remove(worktree, from: repository)
       XCTFail("Expected registration cleanup to preserve the restored worktree")
     } catch let error as GitWorkspaceError {
       XCTAssertEqual(error, .worktreeRegistrationNotPrunable(worktree.path))
@@ -398,7 +488,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     try runGit(["worktree", "lock", fixture.linkedWorktree.path], in: fixture.repository)
 
     do {
-      _ = try await workspace.remove(worktree, from: repository)
+      try await workspace.remove(worktree, from: repository)
       XCTFail("Expected registration cleanup to preserve the locked record")
     } catch let error as GitWorkspaceError {
       XCTAssertEqual(error, .worktreeRegistrationNotPrunable(worktree.path))
@@ -424,7 +514,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     try runGit(["worktree", "lock", fixture.linkedWorktree.path], in: fixture.repository)
 
     do {
-      _ = try await workspace.remove(missingWorktree, from: repository)
+      try await workspace.remove(missingWorktree, from: repository)
       XCTFail("Expected record cleanup to preserve the locked registration")
     } catch let error as GitWorkspaceError {
       guard case .worktreeRegistrationNotPrunable(let path) = error else {
