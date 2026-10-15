@@ -63,6 +63,11 @@
 "column.branch" = "分支";
 "column.status" = "状态";
 "column.disk_usage" = "占用空间";
+"column.last_commit" = "最近提交";
+"table.last_commit.help" = "当前 HEAD 提交的提交者时间。未提交的文件修改不会改变这个时间。";
+"sort.column.help" = "按%@排序，再次点击切换升降序";
+"sort.ascending" = "升序";
+"sort.descending" = "降序";
 "column.recommendation" = "建议";
 "column.path" = "路径";
 "column.actions" = "操作";

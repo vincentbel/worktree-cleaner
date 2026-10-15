@@ -63,6 +63,11 @@
 "column.branch" = "Branch";
 "column.status" = "Status";
 "column.disk_usage" = "Disk Usage";
+"column.last_commit" = "Last Commit";
+"table.last_commit.help" = "The committer time of the current HEAD commit. Uncommitted edits do not change this time.";
+"sort.column.help" = "Sort by %@; click again to reverse the order";
+"sort.ascending" = "Ascending";
+"sort.descending" = "Descending";
 "column.recommendation" = "Recommendation";
 "column.path" = "Path";
 "column.actions" = "Actions";

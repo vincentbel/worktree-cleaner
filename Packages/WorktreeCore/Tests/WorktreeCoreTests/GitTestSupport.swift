@@ -52,12 +52,18 @@ func makeRepositoryWithLinkedWorktree() throws -> (
   return (baseDirectory, repositoryDirectory, linkedWorktreeDirectory)
 }
 
-func runGit(_ arguments: [String], in directory: URL) throws {
+func runGit(
+  _ arguments: [String],
+  in directory: URL,
+  environment: [String: String] = [:]
+) throws {
   let process = Process()
   let errorPipe = Pipe()
   process.executableURL = URL(filePath: "/usr/bin/git")
   process.arguments = arguments
   process.currentDirectoryURL = directory
+  process.environment = ProcessInfo.processInfo.environment.merging(environment) { _, value in value
+  }
   process.standardError = errorPipe
 
   try process.run()

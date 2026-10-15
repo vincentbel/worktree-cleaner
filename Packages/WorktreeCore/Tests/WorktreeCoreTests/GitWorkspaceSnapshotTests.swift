@@ -3,6 +3,65 @@ import WorktreeCore
 import XCTest
 
 final class GitWorkspaceSnapshotTests: XCTestCase {
+  func testSnapshotReportsHeadCommitterDateDespiteUncommittedEdits() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    let date = "2024-02-03T04:05:06Z"
+    try runGit(
+      [
+        "-c", "user.name=Worktree Cleaner Tests",
+        "-c", "user.email=tests@example.com",
+        "commit", "--quiet", "--allow-empty", "-m", "Dated commit",
+      ],
+      in: fixture.linkedWorktree,
+      environment: ["GIT_AUTHOR_DATE": "2020-01-02T03:04:05Z", "GIT_COMMITTER_DATE": date]
+    )
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+    let initial = try await workspace.snapshot(of: repository)
+    let expectedDate = try XCTUnwrap(ISO8601DateFormatter().date(from: date))
+    XCTAssertEqual(initial.worktrees.first { !$0.isMain }?.commitDate, expectedDate)
+    try Data("new edits".utf8).write(to: fixture.linkedWorktree.appending(path: "notes.txt"))
+
+    let updated = try await workspace.snapshot(of: repository)
+
+    let linked = try XCTUnwrap(updated.worktrees.first { !$0.isMain })
+    XCTAssertEqual(linked.commitDate, expectedDate)
+    XCTAssertFalse(try XCTUnwrap(linked.status).isClean)
+  }
+
+  func testSnapshotKeepsKnownCommitDatesWhenAStaleHeadIsUnavailable() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    let other = fixture.base.appending(path: "other-agent")
+    try runGit(
+      ["worktree", "add", "--quiet", "-b", "other-agent", other.path], in: fixture.repository)
+    let gitFile = try String(contentsOf: other.appending(path: ".git"), encoding: .utf8)
+    let gitDirectory = URL(
+      filePath: String(gitFile.dropFirst("gitdir: ".count)).trimmingCharacters(in: .newlines))
+    try FileManager.default.removeItem(at: fixture.linkedWorktree)
+    try FileManager.default.removeItem(at: other)
+    try Data((String(repeating: "f", count: 40) + "\n").utf8)
+      .write(to: gitDirectory.appending(path: "HEAD"))
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+
+    let snapshot = try await workspace.snapshot(of: repository)
+
+    let main = try XCTUnwrap(snapshot.worktrees.first { $0.isMain })
+    let knownStale = try XCTUnwrap(snapshot.worktrees.first { $0.branch == "agent-task" })
+    let unavailable = try XCTUnwrap(
+      snapshot.worktrees.first { $0.head == String(repeating: "f", count: 40) })
+    XCTAssertNotNil(main.commitDate)
+    XCTAssertEqual(knownStale.commitDate, main.commitDate)
+    XCTAssertTrue(knownStale.isPrunable)
+    XCTAssertNil(unavailable.commitDate)
+  }
+
   func testSnapshotListsMainAndLinkedWorktrees() async throws {
     let fixture = try makeRepositoryWithLinkedWorktree()
     defer { try? FileManager.default.removeItem(at: fixture.base) }
