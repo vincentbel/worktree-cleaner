@@ -509,11 +509,15 @@ final class AppState {
       )
       removingWorktreeID = worktree.id
       do {
-        _ = try await workspace.remove(
-          worktree,
-          from: repository,
-          policy: .allowUnmerged
-        )
+        if worktree.isPrunable {
+          try await workspace.removeRegistration(worktree, from: repository)
+        } else {
+          _ = try await workspace.remove(
+            worktree,
+            from: repository,
+            policy: .allowUnmerged
+          )
+        }
         removedCount += 1
       } catch {
         let label = worktree.branch ?? worktree.path.lastPathComponent
