@@ -194,6 +194,14 @@ struct ContentView: View {
         Task { await model.removeAll(request.worktrees) }
       }
     }
+    .sheet(
+      item: Binding(
+        get: { model.batchRemovalResult },
+        set: { model.batchRemovalResult = $0 }
+      )
+    ) { result in
+      BatchRemovalResultSheet(result: result)
+    }
     .alert(
       L10n.string("alert.operation_failed"),
       isPresented: Binding(
@@ -392,6 +400,76 @@ private struct BatchRemovalRequest: Identifiable {
 
   var registrationCount: Int {
     worktrees.count { $0.canCleanUpRegistration }
+  }
+}
+
+private struct BatchRemovalResultSheet: View {
+  let result: BatchRemovalResult
+
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      Label(L10n.string(titleKey), systemImage: systemImage)
+        .font(.title2.weight(.semibold))
+        .foregroundStyle(result.failures.isEmpty ? Color.green : Color.orange)
+
+      Text(L10n.plural("batch.result.removed", count: result.removedCount))
+      if !result.failures.isEmpty {
+        Text(L10n.plural("batch.result.skipped", count: result.failures.count))
+          .foregroundStyle(.secondary)
+
+        ScrollView {
+          LazyVStack(alignment: .leading, spacing: 16) {
+            ForEach(result.failures) { failure in
+              VStack(alignment: .leading, spacing: 5) {
+                Text(failure.label)
+                  .fontWeight(.medium)
+                Text(failure.path.path)
+                  .font(.caption.monospaced())
+                  .foregroundStyle(.secondary)
+                Text(failure.message)
+                  .foregroundStyle(.secondary)
+              }
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .textSelection(.enabled)
+              .fixedSize(horizontal: false, vertical: true)
+            }
+          }
+          .padding(12)
+        }
+        .frame(height: 280)
+        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 8))
+      }
+
+      Text(L10n.string("batch.result.branches_kept"))
+        .font(.callout)
+        .foregroundStyle(.secondary)
+
+      Divider()
+      HStack {
+        Spacer()
+        Button(L10n.string("common.ok")) { dismiss() }
+          .keyboardShortcut(.defaultAction)
+      }
+    }
+    .padding(24)
+    .frame(width: 600)
+    .onExitCommand { dismiss() }
+  }
+
+  private var titleKey: String {
+    if result.failures.isEmpty {
+      "alert.operation_completed"
+    } else if result.removedCount == 0 {
+      "alert.operation_failed"
+    } else {
+      "batch.result.partial_title"
+    }
+  }
+
+  private var systemImage: String {
+    result.failures.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
   }
 }
 
@@ -1166,7 +1244,7 @@ private struct StatusLabel: View {
 
   var body: some View {
     if isPrunable {
-      Label(L10n.string("status.missing_path"), systemImage: "questionmark.folder.fill")
+      Label(L10n.string("status.stale_registration"), systemImage: "questionmark.folder.fill")
         .foregroundStyle(.red)
     } else if isLocked {
       Label(L10n.string("status.locked"), systemImage: "lock.fill")

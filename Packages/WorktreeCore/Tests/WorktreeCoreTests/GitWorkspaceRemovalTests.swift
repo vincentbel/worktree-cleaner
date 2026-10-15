@@ -276,6 +276,86 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     XCTAssertEqual(restoredWorktree.cleanupRecommendation, .cleanable(target: "origin/main"))
   }
 
+  func testRemoveCleansSelectedBrokenRegistrationAndKeepsExistingFiles() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    let otherWorktree = fixture.base.appending(path: "other-agent")
+    try runGit(
+      ["worktree", "add", "--quiet", "-b", "other-agent", otherWorktree.path],
+      in: fixture.repository
+    )
+    try FileManager.default.removeItem(at: otherWorktree)
+    try FileManager.default.removeItem(at: fixture.linkedWorktree.appending(path: ".git"))
+    let notes = fixture.linkedWorktree.appending(path: "notes.txt")
+    let contents = Data("uncommitted work".utf8)
+    try contents.write(to: notes)
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let worktree = try XCTUnwrap(initialSnapshot.worktrees.first { $0.branch == "agent-task" })
+    XCTAssertTrue(worktree.canCleanUpRegistration)
+
+    let updatedSnapshot = try await workspace.remove(worktree, from: repository)
+
+    XCTAssertEqual(updatedSnapshot.worktrees.map(\.branch), ["main", "other-agent"])
+    XCTAssertEqual(try Data(contentsOf: notes), contents)
+    try runGit(["show-ref", "--verify", "refs/heads/agent-task"], in: fixture.repository)
+    try runGit(["show-ref", "--verify", "refs/heads/other-agent"], in: fixture.repository)
+  }
+
+  func testRemoveRefusesBrokenRegistrationAfterGitFileIsRestored() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    let gitFile = fixture.linkedWorktree.appending(path: ".git")
+    let gitFileContents = try Data(contentsOf: gitFile)
+    try FileManager.default.removeItem(at: gitFile)
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let worktree = try XCTUnwrap(initialSnapshot.worktrees.first { !$0.isMain })
+    try gitFileContents.write(to: gitFile)
+
+    do {
+      _ = try await workspace.remove(worktree, from: repository)
+      XCTFail("Expected registration cleanup to preserve the restored worktree")
+    } catch let error as GitWorkspaceError {
+      XCTAssertEqual(error, .worktreeRegistrationNotPrunable(worktree.path))
+    }
+
+    XCTAssertEqual(try Data(contentsOf: gitFile), gitFileContents)
+    let currentSnapshot = try await workspace.snapshot(of: repository)
+    XCTAssertEqual(currentSnapshot.worktrees.count, 2)
+  }
+
+  func testRemoveRefusesBrokenRegistrationLockedAfterSelection() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try FileManager.default.removeItem(at: fixture.linkedWorktree.appending(path: ".git"))
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+    let initialSnapshot = try await workspace.snapshot(of: repository)
+    let worktree = try XCTUnwrap(initialSnapshot.worktrees.first { !$0.isMain })
+    try runGit(["worktree", "lock", fixture.linkedWorktree.path], in: fixture.repository)
+
+    do {
+      _ = try await workspace.remove(worktree, from: repository)
+      XCTFail("Expected registration cleanup to preserve the locked record")
+    } catch let error as GitWorkspaceError {
+      XCTAssertEqual(error, .worktreeRegistrationNotPrunable(worktree.path))
+    }
+
+    let currentSnapshot = try await workspace.snapshot(of: repository)
+    let lockedWorktree = try XCTUnwrap(currentSnapshot.worktrees.first { !$0.isMain })
+    XCTAssertTrue(lockedWorktree.isLocked)
+    XCTAssertTrue(FileManager.default.fileExists(atPath: fixture.linkedWorktree.path))
+  }
+
   func testRemoveRefusesMissingRegistrationLockedAfterSelection() async throws {
     let fixture = try makeRepositoryWithLinkedWorktree()
     defer { try? FileManager.default.removeItem(at: fixture.base) }

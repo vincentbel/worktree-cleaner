@@ -7,6 +7,19 @@ struct BatchRemovalProgress: Equatable {
   let totalCount: Int
 }
 
+struct BatchRemovalFailure: Identifiable {
+  var id: URL { path }
+  let label: String
+  let path: URL
+  let message: String
+}
+
+struct BatchRemovalResult: Identifiable {
+  let id = UUID()
+  let removedCount: Int
+  let failures: [BatchRemovalFailure]
+}
+
 @MainActor
 @Observable
 final class AppState {
@@ -23,6 +36,7 @@ final class AppState {
   var isMeasuringDiskUsage = false
   var removingWorktreeID: GitWorktree.ID?
   var batchRemovalProgress: BatchRemovalProgress?
+  var batchRemovalResult: BatchRemovalResult?
   var errorMessage: String?
   var successMessage: String?
   var transientMessage: String?
@@ -486,7 +500,7 @@ final class AppState {
     }
 
     var removedCount = 0
-    var failures: [String] = []
+    var failures: [BatchRemovalFailure] = []
 
     for (index, worktree) in candidates.enumerated() {
       batchRemovalProgress = BatchRemovalProgress(
@@ -503,7 +517,10 @@ final class AppState {
         removedCount += 1
       } catch {
         let label = worktree.branch ?? worktree.path.lastPathComponent
-        failures.append(L10n.format("batch.result.failure", label, error.localizedDescription))
+        failures.append(
+          BatchRemovalFailure(
+            label: label, path: worktree.path, message: error.localizedDescription)
+        )
       }
     }
 
@@ -517,18 +534,7 @@ final class AppState {
       snapshot = loadedSnapshot
       refreshDiskUsageAfterCleanup(for: loadedSnapshot, loadID: loadID)
 
-      let removedSummary = L10n.plural("batch.result.removed", count: removedCount)
-      if failures.isEmpty {
-        successMessage = L10n.format("batch.result.success", removedSummary)
-      } else {
-        let skippedSummary = L10n.plural("batch.result.skipped", count: failures.count)
-        successMessage = L10n.format(
-          "batch.result.partial",
-          removedSummary,
-          skippedSummary,
-          failures.joined(separator: "\n")
-        )
-      }
+      batchRemovalResult = BatchRemovalResult(removedCount: removedCount, failures: failures)
     } catch {
       guard activeSnapshotLoadID == loadID else { return }
       errorMessage = error.localizedDescription

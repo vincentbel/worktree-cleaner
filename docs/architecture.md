@@ -100,9 +100,10 @@ worktree flag, lock/prunable state, tracked and untracked changes, conflicts,
 upstream divergence, and cleanup recommendation. Disk usage is not part of this
 blocking snapshot.
 
-Inspection supplies `--expire now` when listing worktrees so a path deleted by
-another tool remains visible immediately as a prunable Git record. Such a record
-has no filesystem status or worktree disk measurement. An unlocked linked
+Inspection supplies `--expire now` when listing worktrees so stale registrations
+remain visible immediately. A directory or its `.git` file may be missing; a
+prunable record does not imply that the directory and its files are gone. Such a
+record has no filesystem status or worktree disk measurement. An unlocked linked
 worktree record is eligible for registration cleanup.
 
 The preferred cleanup target is `refs/remotes/origin/HEAD`. If Git cannot resolve
@@ -132,10 +133,14 @@ offer this override.
 
 Removal uses `git worktree remove <absolute-path>` without `--force`. The first
 version never deletes the associated branch as a side effect. Batch cleanup
-removes selected missing registrations individually with `git worktree remove
-<absolute-path>`. Registration cleanup repeats inspection and requires the
-selected directory to remain absent and the record to remain unlocked. It
-preserves unselected registrations, branches, and existing files.
+removes selected missing-directory registrations individually with `git worktree
+remove <absolute-path>`. When the directory survives but its `.git` file is
+missing, cleanup removes only the unique administrative directory under the
+common Git directory's `worktrees` folder whose `gitdir` points to that path.
+Git's `worktree prune` command has no per-record selector. Registration cleanup
+repeats inspection and checks the lock and missing `.git` file immediately before
+removing that administrative directory. It preserves unselected registrations,
+branches, and all existing working-directory files.
 
 The separate record-pruning action uses `git worktree prune --expire now`.
 Pruning requires an explicit confirmation, repeats inspection as a preflight,
@@ -234,7 +239,9 @@ The primary window uses a two-column `NavigationSplitView`:
   ineligible rows remain disabled. The selected count and red delete action sit
   together on the leading side of the detail header;
   a visual confirmation sheet precedes deletion, which then reports sequential
-  progress and a final removed/skipped summary.
+  progress and a final removed/skipped summary. Batch results use a sheet with
+  bounded, scrollable failure details and a persistent dismissal button. The
+  result title distinguishes full success, partial success, and full failure.
 - Settings: a native tabbed settings window shares the application's single
   `AppState`. Its directory tab adds and removes configured roots and shows each
   root's project count, scan progress, or error. Its update tab binds directly

@@ -92,10 +92,12 @@ public struct GitWorkspace: Sendable {
       throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
     }
     if worktree.isPrunable {
-      guard currentWorktree.canCleanUpRegistration,
-        !FileManager.default.fileExists(atPath: currentWorktree.path.path)
-      else {
+      guard currentWorktree.canCleanUpRegistration else {
         throw GitWorkspaceError.worktreeRegistrationNotPrunable(currentWorktree.path)
+      }
+      if FileManager.default.fileExists(atPath: currentWorktree.path.path) {
+        try removeBrokenRegistration(currentWorktree, from: repository)
+        return try await snapshot(of: repository)
       }
     } else {
       switch (currentWorktree.cleanupRecommendation, policy) {
@@ -114,6 +116,39 @@ public struct GitWorkspace: Sendable {
       in: repository.workingTreeURL
     )
     return try await snapshot(of: repository)
+  }
+
+  private func removeBrokenRegistration(
+    _ worktree: GitWorktree,
+    from repository: GitRepository
+  ) throws {
+    let fileManager = FileManager.default
+    let gitFile = worktree.path.appending(path: ".git")
+    let registrationsDirectory = repository.commonGitDirectoryURL.appending(path: "worktrees")
+    let registrations = try fileManager.contentsOfDirectory(
+      at: registrationsDirectory,
+      includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey]
+    )
+    let matches = try registrations.filter { registration in
+      let values = try registration.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+      guard values.isDirectory == true, values.isSymbolicLink != true,
+        var gitPath = try? String(
+          contentsOf: registration.appending(path: "gitdir"), encoding: .utf8)
+      else { return false }
+      if gitPath.hasSuffix("\n") { gitPath.removeLast() }
+      let registeredGitFile = URL(fileURLWithPath: gitPath, relativeTo: registration)
+      return canonicalURL(registeredGitFile.deletingLastPathComponent()) == worktree.path
+    }
+    guard matches.count == 1, let registration = matches.first,
+      !fileManager.fileExists(atPath: registration.appending(path: "locked").path),
+      !fileManager.fileExists(atPath: gitFile.path)
+    else {
+      throw GitWorkspaceError.worktreeRegistrationNotPrunable(worktree.path)
+    }
+
+    // Git's prune command has no per-record selector. Remove only the matched
+    // administrative directory, leaving the surviving working directory intact.
+    try fileManager.removeItem(at: registration)
   }
 
   public func prune(
@@ -271,7 +306,10 @@ public struct GitWorkspace: Sendable {
         if let path, let head {
           let worktreeURL = canonicalURL(URL(filePath: path))
           let pathExists = FileManager.default.fileExists(atPath: worktreeURL.path)
-          isPrunable = isPrunable || !pathExists
+          let gitFileExists = FileManager.default.fileExists(
+            atPath: worktreeURL.appending(path: ".git").path
+          )
+          isPrunable = isPrunable || !pathExists || !gitFileExists
           let status: WorktreeStatus?
           if isPrunable {
             status = nil

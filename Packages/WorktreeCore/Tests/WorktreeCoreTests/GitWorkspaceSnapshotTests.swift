@@ -196,4 +196,23 @@ final class GitWorkspaceSnapshotTests: XCTestCase {
     XCTAssertTrue(missingWorktree.isLocked)
     XCTAssertFalse(missingWorktree.canCleanUpRegistration)
   }
+
+  func testSnapshotKeepsLockedRegistrationWithMissingGitFileIneligibleForCleanup() async throws {
+    let fixture = try makeRepositoryWithLinkedWorktree()
+    defer { try? FileManager.default.removeItem(at: fixture.base) }
+    try runGit(["worktree", "lock", fixture.linkedWorktree.path], in: fixture.repository)
+    try FileManager.default.removeItem(at: fixture.linkedWorktree.appending(path: ".git"))
+    let workspace = GitWorkspace()
+    let repositories = try await collectRepositories(
+      from: workspace.discover(in: fixture.repository))
+    let repository = try XCTUnwrap(repositories.first)
+
+    let snapshot = try await workspace.snapshot(of: repository)
+
+    let worktree = try XCTUnwrap(snapshot.worktrees.first { !$0.isMain })
+    XCTAssertTrue(worktree.isPrunable)
+    XCTAssertTrue(worktree.isLocked)
+    XCTAssertFalse(worktree.canCleanUpRegistration)
+    XCTAssertNil(worktree.status)
+  }
 }

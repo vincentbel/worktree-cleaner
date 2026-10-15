@@ -54,7 +54,7 @@
 
 "prune.confirm.title" = "Clean Up Leftover Worktree Records?";
 "prune.confirm.button" = "Clean Up Records";
-"prune.confirm.message" = "This Worktree directory no longer exists, leaving only an invalid Git record:\n\n%@\n\nCleanup removes every unlocked invalid Worktree record in this repository. It does not delete branches or any files that still exist.";
+"prune.confirm.message" = "This Worktree's Git registration is stale. Its directory or .git file is missing:\n\n%@\n\nCleanup removes every unlocked invalid Worktree record in this repository. It does not delete branches or any files that still exist.";
 
 "table.shared_git_data" = "Shared Git data %@";
 "table.calculating_shared_git" = "Calculating shared Git data…";
@@ -96,12 +96,11 @@
 "batch.select_all.help" = "Select or deselect all cleanable worktrees and leftover records, including unmerged worktrees";
 "batch.select_worktree.label" = "Select %@ for batch cleanup";
 "batch.progress" = "Cleaning %d of %d…";
-"batch.result.failure" = "%@: %@";
-"batch.result.success" = "%@. No branches were deleted.";
-"batch.result.partial" = "%@; %@. No branches were deleted.\n\n%@";
+"batch.result.partial_title" = "Cleanup Partially Completed";
+"batch.result.branches_kept" = "No branches were deleted.";
 
 "disk.large_help" = "Uses more than 5 GB; consider reviewing it";
-"status.missing_path" = "Worktree directory no longer exists";
+"status.stale_registration" = "Stale worktree registration";
 "status.locked" = "Locked";
 "status.clean" = "No uncommitted changes";
 "status.unavailable" = "Status unavailable";
