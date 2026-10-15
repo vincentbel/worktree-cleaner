@@ -85,35 +85,105 @@ public struct GitWorkspace: Sendable {
     _ worktree: GitWorktree,
     from repository: GitRepository,
     policy: WorktreeRemovalPolicy = .allowUnmerged
-  ) async throws -> RepositorySnapshot {
-    let currentSnapshot = try await snapshot(of: repository)
-    guard let currentWorktree = currentSnapshot.worktrees.first(where: { $0.id == worktree.id })
-    else {
+  ) async throws {
+    if worktree.isPrunable {
+      try await removeRegistration(worktree, from: repository)
+      return
+    }
+
+    let runner = GitCommandRunner()
+    let output = try runner.runData(
+      ["worktree", "list", "--porcelain", "-z", "--expire", "now"],
+      in: repository.workingTreeURL
+    )
+    let worktrees = try parseWorktrees(
+      output,
+      repository: repository,
+      cleanupTarget: try cleanupTarget(in: repository, using: runner),
+      worktreeID: worktree.id
+    )
+    guard let currentWorktree = worktrees.first else {
       throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
     }
-    if worktree.isPrunable {
-      guard currentWorktree.canCleanUpRegistration,
-        !FileManager.default.fileExists(atPath: currentWorktree.path.path)
-      else {
-        throw GitWorkspaceError.worktreeRegistrationNotPrunable(currentWorktree.path)
-      }
-    } else {
-      switch (currentWorktree.cleanupRecommendation, policy) {
-      case (.cleanable, _), (.needsReview(reason: .notMerged), .allowUnmerged):
-        break
-      default:
-        throw GitWorkspaceError.worktreeNotCleanable(
-          currentWorktree.path,
-          currentWorktree.cleanupRecommendation
-        )
-      }
+    switch (currentWorktree.cleanupRecommendation, policy) {
+    case (.cleanable, _), (.needsReview(reason: .notMerged), .allowUnmerged):
+      break
+    default:
+      throw GitWorkspaceError.worktreeNotCleanable(
+        currentWorktree.path,
+        currentWorktree.cleanupRecommendation
+      )
     }
 
     _ = try GitCommandRunner().runData(
       ["worktree", "remove", currentWorktree.path.path],
       in: repository.workingTreeURL
     )
-    return try await snapshot(of: repository)
+  }
+
+  public func removeRegistration(
+    _ worktree: GitWorktree,
+    from repository: GitRepository
+  ) async throws {
+    let output = try GitCommandRunner().runData(
+      ["worktree", "list", "--porcelain", "-z", "--expire", "now"],
+      in: repository.workingTreeURL
+    )
+    let registrations = try parseWorktrees(
+      output,
+      repository: repository,
+      cleanupTarget: nil,
+      worktreeID: worktree.id,
+      includeStatus: false
+    )
+    guard let currentWorktree = registrations.first else {
+      throw GitWorkspaceError.worktreeNotRegistered(worktree.path)
+    }
+    guard currentWorktree.canCleanUpRegistration else {
+      throw GitWorkspaceError.worktreeRegistrationNotPrunable(currentWorktree.path)
+    }
+
+    if FileManager.default.fileExists(atPath: currentWorktree.path.path) {
+      try removeBrokenRegistration(currentWorktree, from: repository)
+    } else {
+      _ = try GitCommandRunner().runData(
+        ["worktree", "remove", currentWorktree.path.path],
+        in: repository.workingTreeURL
+      )
+    }
+  }
+
+  private func removeBrokenRegistration(
+    _ worktree: GitWorktree,
+    from repository: GitRepository
+  ) throws {
+    let fileManager = FileManager.default
+    let gitFile = worktree.path.appending(path: ".git")
+    let registrationsDirectory = repository.commonGitDirectoryURL.appending(path: "worktrees")
+    let registrations = try fileManager.contentsOfDirectory(
+      at: registrationsDirectory,
+      includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey]
+    )
+    let matches = try registrations.filter { registration in
+      let values = try registration.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+      guard values.isDirectory == true, values.isSymbolicLink != true,
+        var gitPath = try? String(
+          contentsOf: registration.appending(path: "gitdir"), encoding: .utf8)
+      else { return false }
+      if gitPath.hasSuffix("\n") { gitPath.removeLast() }
+      let registeredGitFile = URL(fileURLWithPath: gitPath, relativeTo: registration)
+      return canonicalURL(registeredGitFile.deletingLastPathComponent()) == worktree.path
+    }
+    guard matches.count == 1, let registration = matches.first,
+      !fileManager.fileExists(atPath: registration.appending(path: "locked").path),
+      !fileManager.fileExists(atPath: gitFile.path)
+    else {
+      throw GitWorkspaceError.worktreeRegistrationNotPrunable(worktree.path)
+    }
+
+    // Git's prune command has no per-record selector. Remove only the matched
+    // administrative directory, leaving the surviving working directory intact.
+    try fileManager.removeItem(at: registration)
   }
 
   public func prune(
@@ -252,11 +322,14 @@ public struct GitWorkspace: Sendable {
   private func parseWorktrees(
     _ data: Data,
     repository: GitRepository,
-    cleanupTarget: String?
+    cleanupTarget: String?,
+    worktreeID: GitWorktree.ID? = nil,
+    includeStatus: Bool = true
   ) throws -> [GitWorktree] {
     let fields = String(decoding: data, as: UTF8.self)
       .components(separatedBy: "\0")
     var worktrees: [GitWorktree] = []
+    var isFirstWorktree = true
     var path: String?
     var head: String?
     var branch: String?
@@ -270,45 +343,51 @@ public struct GitWorkspace: Sendable {
       if field.isEmpty {
         if let path, let head {
           let worktreeURL = canonicalURL(URL(filePath: path))
-          let pathExists = FileManager.default.fileExists(atPath: worktreeURL.path)
-          isPrunable = isPrunable || !pathExists
-          let status: WorktreeStatus?
-          if isPrunable {
-            status = nil
-          } else {
-            let statusOutput = try GitCommandRunner().runData(
-              ["status", "--porcelain=v2", "--branch", "-z"],
-              in: worktreeURL
+          let isMain = isFirstWorktree
+          isFirstWorktree = false
+          if worktreeID == nil || worktreeURL == worktreeID {
+            let pathExists = FileManager.default.fileExists(atPath: worktreeURL.path)
+            let gitFileExists = FileManager.default.fileExists(
+              atPath: worktreeURL.appending(path: ".git").path
             )
-            status = parseStatus(statusOutput)
-          }
-          let isMain = worktrees.isEmpty
-          worktrees.append(
-            GitWorktree(
-              path: worktreeURL,
-              head: head,
-              branch: branch,
-              isDetached: isDetached,
-              isMain: isMain,
-              isLocked: isLocked,
-              lockReason: lockReason,
-              isPrunable: isPrunable,
-              prunableReason: prunableReason,
-              status: status,
-              cleanupRecommendation: try cleanupRecommendation(
+            isPrunable = isPrunable || !pathExists || !gitFileExists
+            let status: WorktreeStatus?
+            if isPrunable || !includeStatus {
+              status = nil
+            } else {
+              let statusOutput = try GitCommandRunner().runData(
+                ["status", "--porcelain=v2", "--branch", "-z"],
+                in: worktreeURL
+              )
+              status = parseStatus(statusOutput)
+            }
+            worktrees.append(
+              GitWorktree(
+                path: worktreeURL,
                 head: head,
-                isMain: isMain,
+                branch: branch,
                 isDetached: isDetached,
+                isMain: isMain,
                 isLocked: isLocked,
                 lockReason: lockReason,
                 isPrunable: isPrunable,
                 prunableReason: prunableReason,
                 status: status,
-                target: cleanupTarget,
-                repository: repository
+                cleanupRecommendation: try cleanupRecommendation(
+                  head: head,
+                  isMain: isMain,
+                  isDetached: isDetached,
+                  isLocked: isLocked,
+                  lockReason: lockReason,
+                  isPrunable: isPrunable,
+                  prunableReason: prunableReason,
+                  status: status,
+                  target: cleanupTarget,
+                  repository: repository
+                )
               )
             )
-          )
+          }
         }
         path = nil
         head = nil
@@ -339,7 +418,7 @@ public struct GitWorkspace: Sendable {
       }
     }
 
-    guard !worktrees.isEmpty else {
+    guard !isFirstWorktree else {
       throw GitWorkspaceError.invalidWorktreeList(repository.workingTreeURL)
     }
     return worktrees

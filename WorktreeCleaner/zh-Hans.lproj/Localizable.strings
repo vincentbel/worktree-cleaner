@@ -54,7 +54,7 @@
 
 "prune.confirm.title" = "清理残留的 Worktree 记录？";
 "prune.confirm.button" = "清理记录";
-"prune.confirm.message" = "这个 Worktree 目录已经不存在，只剩 Git 中的失效记录：\n\n%@\n\n清理会删除当前仓库中所有未锁定的失效记录，不会删除分支或任何仍然存在的文件。";
+"prune.confirm.message" = "这个 Worktree 的 Git 登记已失效，目录或其中的 .git 文件已丢失：\n\n%@\n\n清理会删除当前仓库中所有未锁定的失效记录，不会删除分支或任何仍然存在的文件。";
 
 "table.shared_git_data" = "共享 Git 数据 %@";
 "table.calculating_shared_git" = "正在计算共享 Git 数据…";
@@ -96,12 +96,11 @@
 "batch.select_all.help" = "选择或取消选择全部可清理的 worktree 和残留记录，包括尚未合入项";
 "batch.select_worktree.label" = "选择 %@ 进行批量清理";
 "batch.progress" = "正在清理 %d / %d…";
-"batch.result.failure" = "%@：%@";
-"batch.result.success" = "%@，未删除任何分支。";
-"batch.result.partial" = "%@，%@；未删除任何分支。\n\n%@";
+"batch.result.partial_title" = "部分清理完成";
+"batch.result.branches_kept" = "未删除任何分支。";
 
 "disk.large_help" = "占用超过 5 GB，建议检查";
-"status.missing_path" = "Worktree 目录已不存在";
+"status.stale_registration" = "Worktree 登记已失效";
 "status.locked" = "已锁定";
 "status.clean" = "无未提交修改";
 "status.unavailable" = "状态不可用";
