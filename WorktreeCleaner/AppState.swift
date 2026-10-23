@@ -64,6 +64,9 @@ final class AppState {
   private let workspace: GitWorkspace
   private let defaults: UserDefaults
   private let cacheStore: WorkspaceCacheStore
+  #if DEBUG
+    private var demoDirectoryURL: URL?
+  #endif
   private let scanLimiter = ScanLimiter(limit: 2)
   private var didRestore = false
   private var repositoryCatalog = RepositoryCatalog()
@@ -85,9 +88,37 @@ final class AppState {
     self.cacheStore = WorkspaceCacheStore(defaults: defaults)
   }
 
+  #if DEBUG
+    convenience init(
+      workspace: GitWorkspace = GitWorkspace(),
+      defaults: UserDefaults = .standard,
+      demoDirectoryURL: URL?
+    ) {
+      self.init(workspace: workspace, defaults: defaults)
+      self.demoDirectoryURL = demoDirectoryURL.map(WorkspaceRoots.normalize)
+    }
+  #endif
+
   func restoreSelectedDirectory() async {
     guard !didRestore else { return }
     didRestore = true
+    #if DEBUG
+      if let demoDirectoryURL {
+        do {
+          try workspaceRoots.add(demoDirectoryURL)
+          await scanRoots([demoDirectoryURL], refreshSelectedRepository: true)
+          let repositoryID =
+            visibleRepositories.first(where: { $0.linkedWorktreeCount > 0 })?.id
+            ?? visibleRepositories.first?.id
+          if let repositoryID {
+            await selectRepository(repositoryID)
+          }
+        } catch {
+          errorMessage = error.localizedDescription
+        }
+        return
+      }
+    #endif
     restoreWorkspaceRoots()
     guard !workspaceRoots.urls.isEmpty else { return }
 
@@ -295,6 +326,9 @@ final class AppState {
   }
 
   private func persistWorkspaceRoots() {
+    #if DEBUG
+      guard demoDirectoryURL == nil else { return }
+    #endif
     defaults.set(
       workspaceRoots.urls.map(\.path),
       forKey: Self.baseDirectoryPathsKey
@@ -638,6 +672,9 @@ final class AppState {
   }
 
   private func persistWorkspaceCache() {
+    #if DEBUG
+      guard demoDirectoryURL == nil else { return }
+    #endif
     cacheStore.save(
       WorkspaceCache(
         repositories: repositoryCatalog.repositories,

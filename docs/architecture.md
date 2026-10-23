@@ -1,7 +1,7 @@
 # Worktree Cleaner Architecture
 
 Status: Accepted  
-Last updated: 2026-10-15
+Last updated: 2026-10-23
 
 ## Product goal
 
@@ -35,6 +35,11 @@ and disk usage.
   updates, with the app and an Applications shortcut at the volume root.
   The public source repository also hosts GitHub Release assets and the appcast,
   so the application can update without embedding a shared GitHub credential.
+- Keep local screenshot demos in the main branch. Compile all app-side demo
+  behavior only under `#if DEBUG`; Release apps contain no demo launch hooks or
+  workspace persistence overrides. Generate disposable repositories with the
+  development script outside the app bundle, and check the exported Release app
+  for demo code and fixtures before packaging.
 
 ## Module seam
 
