@@ -1,0 +1,1283 @@
+{
+  "schemaVersion": 3,
+  "appName": "Worktree Cleaner",
+  "themeId": "clean-light",
+  "fontId": "system-sans",
+  "connectedCanvas": false,
+  "locales": [
+    "en"
+  ],
+  "locale": "en",
+  "device": "mac",
+  "orientation": "portrait",
+  "appIcon": "",
+  "slidesByDevice": {
+    "iphone": [
+      {
+        "id": "s_mvkg30kw_0",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Sell one\nidea per slide."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_1",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Your headline\nlives here."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_2",
+        "layout": "two-devices",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Show two\nscreens at once."
+        },
+        "screenshot": "",
+        "screenshotSecondary": ""
+      },
+      {
+        "id": "s_mvkg30kw_3",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 03"
+        },
+        "headline": {
+          "en": "Flip the contrast\nfor visual rhythm."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mvkg30kw_4",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so\nmuch more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "android": [
+      {
+        "id": "s_mvkg30kw_5",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Sell one\nidea per slide."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_6",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Your headline\nlives here."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_7",
+        "layout": "two-devices",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Show two\nscreens at once."
+        },
+        "screenshot": "",
+        "screenshotSecondary": ""
+      },
+      {
+        "id": "s_mvkg30kw_8",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 03"
+        },
+        "headline": {
+          "en": "Flip the contrast\nfor visual rhythm."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mvkg30kw_9",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so\nmuch more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "ipad": [
+      {
+        "id": "s_mvkg30kw_a",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Made for\nthe big screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_b",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Built for\nfocus."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_c",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Always within reach."
+        },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "tvos": [
+      {
+        "id": "s_mvkg30kw_d",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Made for\nthe living room."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_e",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "One idea\nper screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_f",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Flip the contrast."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mvkg30kw_g",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so\nmuch more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "watchos": [
+      {
+        "id": "s_mvkg30kw_h",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "On your\nwrist."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_i",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "One glance.\nDone."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_j",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Always\nwith you."
+        },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "carplay": [
+      {
+        "id": "s_mvkg30kw_k",
+        "layout": "split-landscape",
+        "label": {
+          "en": "CARPLAY"
+        },
+        "headline": {
+          "en": "Eyes on\nthe road."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_l",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Everything, one tap away."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_m",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Made for every drive."
+        },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "mac": [
+      {
+        "id": "01-repositories",
+        "layout": "no-device",
+        "label": {
+          "en": ""
+        },
+        "headline": {
+          "en": ""
+        },
+        "screenshot": "/screenshots/worktree-cleaner-en/captures/01-repositories.jpg",
+        "backgroundColor": "#F6F7FA",
+        "textElements": [
+          {
+            "id": "brand",
+            "text": {
+              "en": "WORKTREE CLEANER"
+            },
+            "transform": {
+              "x": 175,
+              "y": 66,
+              "width": 730,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 34,
+            "fontWeight": 500,
+            "color": "#3D4D64",
+            "align": "left"
+          },
+          {
+            "id": "index",
+            "text": {
+              "en": "01  /  REPOSITORIES"
+            },
+            "transform": {
+              "x": 1980,
+              "y": 66,
+              "width": 740,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 32,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "right"
+          },
+          {
+            "id": "headline-line1",
+            "text": {
+              "en": "Scan multiple"
+            },
+            "transform": {
+              "x": 120,
+              "y": 238,
+              "width": 890,
+              "height": 260,
+              "zIndex": 6
+            },
+            "fontSize": 132,
+            "fontWeight": 600,
+            "color": "#192A43",
+            "align": "left"
+          },
+          {
+            "id": "headline-line2",
+            "text": {
+              "en": "repos"
+            },
+            "transform": {
+              "x": 120,
+              "y": 443,
+              "width": 890,
+              "height": 270,
+              "zIndex": 6
+            },
+            "fontSize": 168,
+            "fontWeight": 600,
+            "color": "#155CCD",
+            "align": "left"
+          },
+          {
+            "id": "subtitle",
+            "text": {
+              "en": "Find Git repos in a folder\nand its subfolders."
+            },
+            "transform": {
+              "x": 128,
+              "y": 735,
+              "width": 790,
+              "height": 180,
+              "zIndex": 6
+            },
+            "fontSize": 44,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "left"
+          }
+        ],
+        "imageElements": [
+          {
+            "id": "composition",
+            "src": "/screenshots/worktree-cleaner-en/01-repositories.svg",
+            "transform": {
+              "x": 0,
+              "y": 0,
+              "width": 2880,
+              "height": 1800,
+              "zIndex": 5
+            },
+            "fit": "contain"
+          }
+        ]
+      },
+      {
+        "id": "02-locations",
+        "layout": "split-landscape",
+        "label": {
+          "en": ""
+        },
+        "headline": {
+          "en": ""
+        },
+        "screenshot": "/screenshots/worktree-cleaner-en/captures/02-locations.jpg",
+        "backgroundColor": "#F6F7FA",
+        "textElements": [
+          {
+            "id": "brand",
+            "text": {
+              "en": "WORKTREE CLEANER"
+            },
+            "transform": {
+              "x": 175,
+              "y": 66,
+              "width": 730,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 34,
+            "fontWeight": 500,
+            "color": "#3D4D64",
+            "align": "left"
+          },
+          {
+            "id": "index",
+            "text": {
+              "en": "02  /  WORKTREE PATHS"
+            },
+            "transform": {
+              "x": 1980,
+              "y": 66,
+              "width": 740,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 32,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "right"
+          },
+          {
+            "id": "headline-line1",
+            "text": {
+              "en": "View worktrees"
+            },
+            "transform": {
+              "x": 120,
+              "y": 238,
+              "width": 890,
+              "height": 260,
+              "zIndex": 6
+            },
+            "fontSize": 116,
+            "fontWeight": 600,
+            "color": "#192A43",
+            "align": "left"
+          },
+          {
+            "id": "headline-line2",
+            "text": {
+              "en": "across folders"
+            },
+            "transform": {
+              "x": 120,
+              "y": 443,
+              "width": 890,
+              "height": 270,
+              "zIndex": 6
+            },
+            "fontSize": 128,
+            "fontWeight": 600,
+            "color": "#155CCD",
+            "align": "left"
+          },
+          {
+            "id": "subtitle",
+            "text": {
+              "en": "See linked worktrees\nwherever they're stored."
+            },
+            "transform": {
+              "x": 128,
+              "y": 735,
+              "width": 790,
+              "height": 180,
+              "zIndex": 6
+            },
+            "fontSize": 44,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "left"
+          }
+        ],
+        "imageElements": [
+          {
+            "id": "composition",
+            "src": "/screenshots/worktree-cleaner-en/02-locations.svg",
+            "transform": {
+              "x": 0,
+              "y": 0,
+              "width": 2880,
+              "height": 1800,
+              "zIndex": 5
+            },
+            "fit": "contain"
+          }
+        ]
+      },
+      {
+        "id": "03-disk-usage",
+        "layout": "hero",
+        "label": {
+          "en": ""
+        },
+        "headline": {
+          "en": ""
+        },
+        "screenshot": "/screenshots/worktree-cleaner-en/captures/03-disk-usage.jpg",
+        "backgroundColor": "#F6F7FA",
+        "textElements": [
+          {
+            "id": "brand",
+            "text": {
+              "en": "WORKTREE CLEANER"
+            },
+            "transform": {
+              "x": 175,
+              "y": 66,
+              "width": 730,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 34,
+            "fontWeight": 500,
+            "color": "#3D4D64",
+            "align": "left"
+          },
+          {
+            "id": "index",
+            "text": {
+              "en": "03  /  DISK USAGE"
+            },
+            "transform": {
+              "x": 1980,
+              "y": 66,
+              "width": 740,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 32,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "right"
+          },
+          {
+            "id": "headline-line1",
+            "text": {
+              "en": "Compare"
+            },
+            "transform": {
+              "x": 120,
+              "y": 238,
+              "width": 890,
+              "height": 270,
+              "zIndex": 6
+            },
+            "fontSize": 180,
+            "fontWeight": 600,
+            "color": "#192A43",
+            "align": "left"
+          },
+          {
+            "id": "headline-line2",
+            "text": {
+              "en": "disk usage"
+            },
+            "transform": {
+              "x": 920,
+              "y": 238,
+              "width": 1590,
+              "height": 270,
+              "zIndex": 6
+            },
+            "fontSize": 180,
+            "fontWeight": 600,
+            "color": "#155CCD",
+            "align": "left"
+          },
+          {
+            "id": "subtitle",
+            "text": {
+              "en": "See how much space each worktree uses."
+            },
+            "transform": {
+              "x": 128,
+              "y": 522,
+              "width": 2410,
+              "height": 110,
+              "zIndex": 6
+            },
+            "fontSize": 48,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "left"
+          }
+        ],
+        "imageElements": [
+          {
+            "id": "composition",
+            "src": "/screenshots/worktree-cleaner-en/03-disk-usage.svg",
+            "transform": {
+              "x": 0,
+              "y": 0,
+              "width": 2880,
+              "height": 1800,
+              "zIndex": 5
+            },
+            "fit": "contain"
+          }
+        ]
+      },
+      {
+        "id": "04-cleanup-decision",
+        "layout": "split-landscape",
+        "label": {
+          "en": ""
+        },
+        "headline": {
+          "en": ""
+        },
+        "screenshot": "/screenshots/worktree-cleaner-en/captures/04-cleanup-decision.jpg",
+        "backgroundColor": "#F6F7FA",
+        "textElements": [
+          {
+            "id": "brand",
+            "text": {
+              "en": "WORKTREE CLEANER"
+            },
+            "transform": {
+              "x": 175,
+              "y": 66,
+              "width": 730,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 34,
+            "fontWeight": 500,
+            "color": "#3D4D64",
+            "align": "left"
+          },
+          {
+            "id": "index",
+            "text": {
+              "en": "04  /  CLEANUP DECISIONS"
+            },
+            "transform": {
+              "x": 1980,
+              "y": 66,
+              "width": 740,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 32,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "right"
+          },
+          {
+            "id": "headline-line1",
+            "text": {
+              "en": "Review before"
+            },
+            "transform": {
+              "x": 120,
+              "y": 238,
+              "width": 890,
+              "height": 260,
+              "zIndex": 6
+            },
+            "fontSize": 128,
+            "fontWeight": 600,
+            "color": "#192A43",
+            "align": "left"
+          },
+          {
+            "id": "headline-line2",
+            "text": {
+              "en": "you delete"
+            },
+            "transform": {
+              "x": 120,
+              "y": 443,
+              "width": 890,
+              "height": 270,
+              "zIndex": 6
+            },
+            "fontSize": 156,
+            "fontWeight": 600,
+            "color": "#155CCD",
+            "align": "left"
+          },
+          {
+            "id": "subtitle",
+            "text": {
+              "en": "Check merge status and\nuncommitted changes\nbefore cleanup."
+            },
+            "transform": {
+              "x": 128,
+              "y": 735,
+              "width": 790,
+              "height": 180,
+              "zIndex": 6
+            },
+            "fontSize": 44,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "left"
+          }
+        ],
+        "imageElements": [
+          {
+            "id": "composition",
+            "src": "/screenshots/worktree-cleaner-en/04-cleanup-decision.svg",
+            "transform": {
+              "x": 0,
+              "y": 0,
+              "width": 2880,
+              "height": 1800,
+              "zIndex": 5
+            },
+            "fit": "contain"
+          }
+        ],
+        "inverted": true
+      },
+      {
+        "id": "05-batch-cleanup",
+        "layout": "two-devices",
+        "label": {
+          "en": ""
+        },
+        "headline": {
+          "en": ""
+        },
+        "screenshot": "/screenshots/worktree-cleaner-en/captures/05-batch-selected.jpg",
+        "backgroundColor": "#F6F7FA",
+        "textElements": [
+          {
+            "id": "brand",
+            "text": {
+              "en": "WORKTREE CLEANER"
+            },
+            "transform": {
+              "x": 175,
+              "y": 66,
+              "width": 730,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 34,
+            "fontWeight": 500,
+            "color": "#3D4D64",
+            "align": "left"
+          },
+          {
+            "id": "index",
+            "text": {
+              "en": "05  /  BATCH CLEANUP"
+            },
+            "transform": {
+              "x": 1980,
+              "y": 66,
+              "width": 740,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 32,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "right"
+          },
+          {
+            "id": "headline-line1",
+            "text": {
+              "en": "Clean up"
+            },
+            "transform": {
+              "x": 120,
+              "y": 238,
+              "width": 890,
+              "height": 270,
+              "zIndex": 6
+            },
+            "fontSize": 180,
+            "fontWeight": 600,
+            "color": "#192A43",
+            "align": "left"
+          },
+          {
+            "id": "headline-line2",
+            "text": {
+              "en": "in bulk"
+            },
+            "transform": {
+              "x": 880,
+              "y": 238,
+              "width": 1590,
+              "height": 270,
+              "zIndex": 6
+            },
+            "fontSize": 180,
+            "fontWeight": 600,
+            "color": "#155CCD",
+            "align": "left"
+          },
+          {
+            "id": "subtitle",
+            "text": {
+              "en": "Remove selected worktrees while keeping their Git branches."
+            },
+            "transform": {
+              "x": 128,
+              "y": 522,
+              "width": 2410,
+              "height": 110,
+              "zIndex": 6
+            },
+            "fontSize": 48,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "left"
+          }
+        ],
+        "imageElements": [
+          {
+            "id": "composition",
+            "src": "/screenshots/worktree-cleaner-en/05-batch-cleanup.svg",
+            "transform": {
+              "x": 0,
+              "y": 0,
+              "width": 2880,
+              "height": 1800,
+              "zIndex": 5
+            },
+            "fit": "contain"
+          }
+        ],
+        "screenshotSecondary": "/screenshots/worktree-cleaner-en/captures/06-batch-confirmation.jpg"
+      },
+      {
+        "id": "06-sort-select",
+        "layout": "split-landscape",
+        "label": {
+          "en": ""
+        },
+        "headline": {
+          "en": ""
+        },
+        "screenshot": "/screenshots/worktree-cleaner-en/captures/07-sort-select.jpg",
+        "backgroundColor": "#F6F7FA",
+        "textElements": [
+          {
+            "id": "brand",
+            "text": {
+              "en": "WORKTREE CLEANER"
+            },
+            "transform": {
+              "x": 175,
+              "y": 66,
+              "width": 730,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 34,
+            "fontWeight": 500,
+            "color": "#3D4D64",
+            "align": "left"
+          },
+          {
+            "id": "index",
+            "text": {
+              "en": "06  /  SORT & SELECT"
+            },
+            "transform": {
+              "x": 1980,
+              "y": 66,
+              "width": 740,
+              "height": 90,
+              "zIndex": 6
+            },
+            "fontSize": 32,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "right"
+          },
+          {
+            "id": "headline-line1",
+            "text": {
+              "en": "Sort and select"
+            },
+            "transform": {
+              "x": 120,
+              "y": 238,
+              "width": 890,
+              "height": 260,
+              "zIndex": 6
+            },
+            "fontSize": 120,
+            "fontWeight": 600,
+            "color": "#192A43",
+            "align": "left"
+          },
+          {
+            "id": "headline-line2",
+            "text": {
+              "en": "worktrees"
+            },
+            "transform": {
+              "x": 120,
+              "y": 443,
+              "width": 890,
+              "height": 270,
+              "zIndex": 6
+            },
+            "fontSize": 168,
+            "fontWeight": 600,
+            "color": "#155CCD",
+            "align": "left"
+          },
+          {
+            "id": "subtitle",
+            "text": {
+              "en": "Sort the list, then Shift-click\nto select a range."
+            },
+            "transform": {
+              "x": 128,
+              "y": 735,
+              "width": 790,
+              "height": 180,
+              "zIndex": 6
+            },
+            "fontSize": 44,
+            "fontWeight": 400,
+            "color": "#59677D",
+            "align": "left"
+          }
+        ],
+        "imageElements": [
+          {
+            "id": "composition",
+            "src": "/screenshots/worktree-cleaner-en/06-sort-select.svg",
+            "transform": {
+              "x": 0,
+              "y": 0,
+              "width": 2880,
+              "height": 1800,
+              "zIndex": 5
+            },
+            "fit": "contain"
+          }
+        ]
+      }
+    ],
+    "android-7": [
+      {
+        "id": "s_mvkg30kw_s",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Pocket-sized\npower."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_t",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Wide canvas,\nbigger ideas."
+        },
+        "screenshot": ""
+      }
+    ],
+    "android-10": [
+      {
+        "id": "s_mvkg30kw_u",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Made for\nthe big screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_v",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "Wide canvas,\nbigger ideas."
+        },
+        "screenshot": ""
+      }
+    ],
+    "feature-graphic": [
+      {
+        "id": "s_mvkg30kw_w",
+        "layout": "feature-graphic",
+        "label": {},
+        "headline": {
+          "en": "Your tagline goes here."
+        },
+        "screenshot": ""
+      }
+    ],
+    "duo-outer": [
+      {
+        "id": "s_mvkg30kw_x",
+        "layout": "hero",
+        "label": {
+          "en": "MEET YOUR APP"
+        },
+        "headline": {
+          "en": "Everything,\none hand."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_y",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "One idea\nper screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_z",
+        "layout": "two-devices",
+        "label": {
+          "en": "OPEN IT"
+        },
+        "headline": {
+          "en": "Open it for\nthe full view."
+        },
+        "screenshot": "",
+        "screenshotSecondary": ""
+      },
+      {
+        "id": "s_mvkg30kw_10",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Flip the contrast."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mvkg30kw_11",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so\nmuch more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "duo-outer-landscape": [
+      {
+        "id": "s_mvkg30kw_12",
+        "layout": "hero",
+        "label": {
+          "en": "TURN IT"
+        },
+        "headline": {
+          "en": "Made for the wide view."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_13",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "One idea\nper screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_14",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Flip the contrast."
+        },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "duo-inner": [
+      {
+        "id": "s_mvkg30kw_15",
+        "layout": "hero",
+        "label": {
+          "en": "UNFOLD IT"
+        },
+        "headline": {
+          "en": "Room for\nthe whole view."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_16",
+        "layout": "device-bottom",
+        "label": {
+          "en": "FEATURE 01"
+        },
+        "headline": {
+          "en": "One idea\nper screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_17",
+        "layout": "two-devices",
+        "label": {
+          "en": "FOLDED + OPEN"
+        },
+        "headline": {
+          "en": "Turn it, open it,\nkeep going."
+        },
+        "screenshot": "",
+        "screenshotSecondary": ""
+      },
+      {
+        "id": "s_mvkg30kw_18",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "Flip the contrast."
+        },
+        "screenshot": "",
+        "inverted": true
+      }
+    ],
+    "duo-inner-landscape": [
+      {
+        "id": "s_mvkg30kw_19",
+        "layout": "hero",
+        "label": {
+          "en": "UNFOLD IT"
+        },
+        "headline": {
+          "en": "Lead with the two-pane view."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_1a",
+        "layout": "two-devices",
+        "label": {
+          "en": "FOLDED + OPEN"
+        },
+        "headline": {
+          "en": "Same moment, closed and open."
+        },
+        "screenshot": "",
+        "screenshotSecondary": ""
+      },
+      {
+        "id": "s_mvkg30kw_1b",
+        "layout": "split-landscape",
+        "label": {
+          "en": "FEATURE 02"
+        },
+        "headline": {
+          "en": "One idea\nper screen."
+        },
+        "screenshot": ""
+      },
+      {
+        "id": "s_mvkg30kw_1c",
+        "layout": "device-top",
+        "label": {
+          "en": "FEATURE 03"
+        },
+        "headline": {
+          "en": "Show what only the wide screen can."
+        },
+        "screenshot": "",
+        "inverted": true
+      },
+      {
+        "id": "s_mvkg30kw_1d",
+        "layout": "no-device",
+        "label": {
+          "en": "MORE"
+        },
+        "headline": {
+          "en": "And so much more."
+        },
+        "screenshot": ""
+      }
+    ],
+    "creative-universal": [
+      {
+        "id": "s_mvkg30kw_1e",
+        "layout": "split-landscape",
+        "label": {
+          "en": "NEW"
+        },
+        "headline": {
+          "en": "Your app,\nat a glance."
+        },
+        "screenshot": ""
+      }
+    ],
+    "creative-header": [
+      {
+        "id": "s_mvkg30kw_1f",
+        "layout": "split-landscape",
+        "label": {
+          "en": "NEW"
+        },
+        "headline": {
+          "en": "Your app,\nat a glance."
+        },
+        "screenshot": ""
+      }
+    ],
+    "creative-search": [
+      {
+        "id": "s_mvkg30kw_1g",
+        "layout": "split-landscape",
+        "label": {
+          "en": "NEW"
+        },
+        "headline": {
+          "en": "Your app,\nat a glance."
+        },
+        "screenshot": ""
+      }
+    ]
+  },
+  "scene": {
+    "backdrop": "solid",
+    "span": false,
+    "decoration": "none",
+    "shadow": 0,
+    "glow": 0,
+    "tilt": 0,
+    "headlineWeight": 600,
+    "headlineScale": 1,
+    "headlineCase": "as-typed",
+    "captionAlign": "left"
+  }
+}
