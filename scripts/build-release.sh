@@ -97,6 +97,7 @@ if [[ ! -d "$application_path" ]]; then
   exit 66
 fi
 
+"$script_directory/verify-no-demo.sh" "$application_path"
 codesign --verify --deep --strict --verbose=2 "$application_path"
 signing_identity="$(
   codesign --display --verbose=4 "$application_path" 2>&1 |

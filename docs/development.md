@@ -42,6 +42,90 @@ Launch that exact build for manual verification:
 open -n /tmp/worktree-cleaner-derived/Build/Products/Debug/WorktreeCleaner.app
 ```
 
+## Screenshot demo data
+
+Generate disposable Git repositories and launch the Debug app with privacy-safe
+demo data:
+
+```sh
+./scripts/run-demo.sh
+```
+
+The script rebuilds `/private/tmp/worktree-cleaner-demo`, creates repositories
+covering the main cleanup states, builds the app, and opens it with
+`--demo-directory` in English for the README screenshot. Demo mode ignores the
+saved scan directories and workspace cache without changing them. A normal
+launch returns to the saved workspace.
+
+Demo mode uses a light appearance and starts with automatic update checks disabled.
+Set the demo language and scan directory for localized introduction images:
+
+```sh
+WORKTREE_DEMO_LANGUAGE=zh-Hans \
+WORKTREE_DEMO_ROOT=/tmp/worktree-cleaner-intro/repos \
+  ./scripts/run-demo.sh
+```
+
+For the location-discovery image, generate one repository with linked worktrees
+in a tool directory, a temporary directory, and beside the main worktree:
+
+```sh
+WORKTREE_DEMO_LANGUAGE=zh-Hans \
+WORKTREE_DEMO_SCENARIO=locations \
+WORKTREE_DEMO_ROOT=/tmp/wtc-demo-home \
+  ./scripts/run-demo.sh
+```
+
+This scenario scans only the `repos` subdirectory. Git registration supplies
+the worktrees outside that scan directory. The temporary worktree has a separate
+ownership marker so reruns replace only generated demo data.
+
+For the disk-usage image, generate one repository with three worktrees and
+different amounts of ignored dependencies or build products:
+
+```sh
+WORKTREE_DEMO_LANGUAGE=zh-Hans \
+WORKTREE_DEMO_SCENARIO=disk-usage \
+WORKTREE_DEMO_ROOT=/tmp/worktree-cleaner-disk-demo \
+  ./scripts/run-demo.sh
+```
+
+This scenario writes 528 MiB of disposable files. The app measures their actual
+allocated disk space; all three worktrees remain clean.
+
+For the cleanup-decision and batch-confirmation images, generate one repository
+with a merged worktree, an unmerged branch, and uncommitted work:
+
+```sh
+WORKTREE_DEMO_LANGUAGE=zh-Hans \
+WORKTREE_DEMO_SCENARIO=decision \
+WORKTREE_DEMO_ROOT=/tmp/worktree-cleaner-decision-demo \
+  ./scripts/run-demo.sh
+```
+
+The two clean linked worktrees can be selected for batch cleanup. The worktree
+with uncommitted changes is protected. Open the confirmation sheet to capture
+the merged/unmerged breakdown and the branch-preservation message.
+
+To reuse generated data with an existing Debug build, pass the scan directory
+directly (use the `repos` subdirectory for the `locations` scenario):
+
+```sh
+open -n /tmp/worktree-cleaner-demo-derived/Build/Products/Debug/WorktreeCleaner.app \
+  --args -AppleLanguages '(zh-Hans)' --demo-directory /tmp/worktree-cleaner-demo
+```
+
+All demo argument handling, startup behavior, and workspace persistence overrides
+are guarded by `#if DEBUG`. Release builds compile them out entirely. The demo
+script and generated repositories live outside the app target and are never
+copied into the app bundle. The release script checks the exported app for demo
+symbols, argument strings, and fixture content before packaging it. Run the same
+check on a local Release build with:
+
+```sh
+./scripts/verify-no-demo.sh /path/to/Release/WorktreeCleaner.app
+```
+
 ## Tests and formatting
 
 Run the core integration tests:
