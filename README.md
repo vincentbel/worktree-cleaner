@@ -22,20 +22,44 @@ work protected.
 
 ## Features
 
-- **🧹 Reclaim disk space safely.** Remove eligible worktrees individually or in a
-  batch without deleting their Git branches.
-- **🛡️ Know what is safe to remove.** See uncommitted changes, merge state, locks,
-  missing directories, and disk usage with a clear recommendation.
-- **🕒 Find older worktrees quickly.** See the latest commit time and sort by
-  commit time, disk usage, branch, or full path.
-- **☑️ Select a range.** Shift-click checkboxes to select or deselect a range,
-  automatically skipping worktrees that cannot be cleaned up.
-- **🔍 Recursive discovery.** Add one or more scan directories and automatically find
-  the Git repositories and worktrees inside them.
-- **🪶 Lightweight native app.** A signed and notarized universal macOS app,
-  distributed as a drag-to-install DMG.
-- **🧰 Repair stale registrations.** Clean up Git records when a worktree directory
-  or its `.git` link is missing, preserving existing files and branches.
+<table>
+  <tr>
+    <td width="50%">
+      <a href="docs/images/intro-en/01-repositories.png">
+        <img src="docs/images/intro-en/01-repositories.png" width="100%" alt="Add a parent folder to recursively discover multiple Git repositories in one scan">
+      </a>
+    </td>
+    <td width="50%">
+      <a href="docs/images/intro-en/02-locations.png">
+        <img src="docs/images/intro-en/02-locations.png" width="100%" alt="Registered worktrees from a sibling folder, a temporary directory, and an agent directory grouped under one repository">
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="docs/images/intro-en/03-disk-usage.png">
+        <img src="docs/images/intro-en/03-disk-usage.png" width="100%" alt="Compare worktree disk usage, including a build worktree using 402.7 MB and a preview worktree using 134.2 MB">
+      </a>
+    </td>
+    <td width="50%">
+      <a href="docs/images/intro-en/04-cleanup-decision.png">
+        <img src="docs/images/intro-en/04-cleanup-decision.png" width="100%" alt="Git cleanup recommendations distinguish merged worktrees, unmerged branches needing review, and protected uncommitted work">
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="docs/images/intro-en/05-batch-cleanup.png">
+        <img src="docs/images/intro-en/05-batch-cleanup.png" width="100%" alt="Select two worktrees in one repository and review the batch cleanup confirmation while preserving their Git branches">
+      </a>
+    </td>
+    <td width="50%">
+      <a href="docs/images/intro-en/06-sort-select.png">
+        <img src="docs/images/intro-en/06-sort-select.png" width="100%" alt="Sort worktrees by commit time, disk usage, branch, or path, and Shift-click to select a range">
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Safety guarantees
 
@@ -74,5 +98,6 @@ first when sorting, and unknown dates or disk sizes stay last.
 - [Development](docs/development.md)
 - [Architecture and safety decisions](docs/architecture.md)
 - [Release process](docs/releasing.md)
+- [Edit and export the introduction images](docs/marketing/intro-en/README.md)
 
 [download]: https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.2/WorktreeCleaner-0.1.2.dmg
