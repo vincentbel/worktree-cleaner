@@ -17,12 +17,19 @@ fi
 
 staging_directory="$(mktemp -d "${TMPDIR:-/tmp}/worktree-cleaner-dmg.XXXXXX")"
 trap 'rm -rf "$staging_directory"' EXIT
+contents_directory="$staging_directory/contents"
+staging_image="$staging_directory/staging.dmg"
+mkdir -p "$contents_directory"
 
-ditto "$application_path" "$staging_directory/WorktreeCleaner.app"
-ln -s /Applications "$staging_directory/Applications"
+ditto "$application_path" "$contents_directory/WorktreeCleaner.app"
+ln -s /Applications "$contents_directory/Applications"
 hdiutil create \
   -volname "Worktree Cleaner" \
-  -srcfolder "$staging_directory" \
+  -srcfolder "$contents_directory" \
   -fs HFS+ \
+  -format UDRW \
+  "$staging_image"
+hdiutil convert "$staging_image" \
   -format UDZO \
-  "$disk_image"
+  -o "$disk_image"
+hdiutil verify "$disk_image"
