@@ -32,6 +32,9 @@
 "detail.loading_git_status" = "正在读取 Git 状态…";
 "detail.select_project" = "选择一个项目";
 
+"default_branch.syncing" = "正在同步远端默认分支…";
+"default_branch.sync_failed" = "远端默认分支同步失败，当前显示本地 Git 状态。";
+
 "directory_manager.title" = "扫描目录";
 "directory_manager.empty.title" = "尚未添加扫描目录";
 "directory_manager.empty.description" = "选择一个目录，以在其中及其子目录中查找 Git 项目。";

@@ -12,7 +12,7 @@ See what is safe to remove, reclaim disk space, and keep branches and uncommitte
 work protected.
 
 <p align="center">
-  <strong><a href="https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.2/WorktreeCleaner-0.1.2.dmg">Download Worktree Cleaner 0.1.2</a></strong>
+  <strong><a href="https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.3/WorktreeCleaner-0.1.3.dmg">Download Worktree Cleaner 0.1.3</a></strong>
 </p>
 
 <p align="center">
@@ -71,7 +71,7 @@ work protected.
 
 ## Install
 
-Download the signed and notarized [Worktree Cleaner 0.1.2 DMG][download].
+Download the signed and notarized [Worktree Cleaner 0.1.3 DMG][download].
 Open it, drag `WorktreeCleaner.app` onto the **Applications** shortcut, then
 launch the app from Applications and eject the disk image.
 
@@ -91,7 +91,10 @@ Requires **macOS 14 or later** and Git at `/usr/bin/git`.
 zone. Uncommitted file edits do not change this time. The main worktree stays
 first when sorting, and unknown dates or disk sizes stay last.
 
-**Scanning is read-only.** Files change only after you explicitly confirm cleanup.
+Repository discovery is read-only. When you open or refresh a project with linked
+worktrees, the app checks the default branch on `origin` and updates its local
+remote-tracking reference when needed. Worktree files change only after you
+explicitly confirm cleanup.
 
 ## Project documentation
 
@@ -100,4 +103,4 @@ first when sorting, and unknown dates or disk sizes stay last.
 - [Release process](docs/releasing.md)
 - [Edit and export the introduction images](docs/marketing/intro-en/README.md)
 
-[download]: https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.2/WorktreeCleaner-0.1.2.dmg
+[download]: https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.3/WorktreeCleaner-0.1.3.dmg

@@ -32,6 +32,9 @@
 "detail.loading_git_status" = "Reading Git status…";
 "detail.select_project" = "Select a Project";
 
+"default_branch.syncing" = "Syncing the remote default branch…";
+"default_branch.sync_failed" = "Could not sync the remote default branch; showing local Git status.";
+
 "directory_manager.title" = "Scan Directories";
 "directory_manager.empty.title" = "No Scan Directories";
 "directory_manager.empty.description" = "Choose a directory to search it and its subdirectories for Git projects.";

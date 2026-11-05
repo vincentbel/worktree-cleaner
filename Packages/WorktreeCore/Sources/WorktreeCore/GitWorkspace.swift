@@ -50,6 +50,100 @@ public struct GitWorkspace: Sendable {
     )
   }
 
+  public func synchronizeDefaultBranch(of repository: GitRepository) async throws -> Bool {
+    let runner = GitCommandRunner()
+    let directory = repository.workingTreeURL
+    let remote = try await remoteDefaultBranch(in: directory, using: runner)
+    let trackingRef = "refs/remotes/origin/\(remote.branch)"
+    guard trackingRef != "refs/remotes/origin/HEAD",
+      try symbolicReference(trackingRef, in: directory, using: runner) == nil
+    else {
+      throw GitWorkspaceError.invalidRemoteTrackingReference(trackingRef)
+    }
+
+    var changed = false
+    let localObject = try object(at: trackingRef, in: directory, using: runner)
+    if localObject != remote.commit {
+      let remoteRef = "refs/heads/\(remote.branch)"
+      _ = try await runner.runNetwork(
+        [
+          "fetch", "--no-tags", "--no-prune", "--no-prune-tags", "--no-auto-maintenance",
+          "--no-write-fetch-head", "--refmap=", "origin", remoteRef,
+        ],
+        in: directory
+      )
+      let currentRemote = try await remoteDefaultBranch(in: directory, using: runner)
+      guard currentRemote.branch == remote.branch, currentRemote.commit == remote.commit else {
+        throw GitWorkspaceError.remoteDefaultBranchChanged(directory)
+      }
+      _ = try runner.runData(["cat-file", "-e", "\(remote.commit)^{commit}"], in: directory)
+      try Task.checkCancellation()
+      _ = try runner.runData(
+        [
+          "update-ref", "--no-deref", trackingRef, remote.commit,
+          localObject ?? String(repeating: "0", count: remote.commit.count),
+        ],
+        in: directory
+      )
+      changed = true
+    }
+
+    try Task.checkCancellation()
+    if try symbolicReference("refs/remotes/origin/HEAD", in: directory, using: runner)
+      != trackingRef
+    {
+      _ = try runner.runData(
+        ["symbolic-ref", "refs/remotes/origin/HEAD", trackingRef],
+        in: directory
+      )
+      changed = true
+    }
+    return changed
+  }
+
+  private func remoteDefaultBranch(
+    in directory: URL,
+    using runner: GitCommandRunner
+  ) async throws -> (branch: String, commit: String) {
+    let output = try await runner.runNetwork(
+      ["ls-remote", "--symref", "origin", "HEAD"], in: directory)
+    let lines = output.split(separator: "\n")
+    let prefix = "ref: refs/heads/"
+    let suffix = "\tHEAD"
+    guard let ref = lines.first(where: { $0.hasPrefix(prefix) && $0.hasSuffix(suffix) }),
+      let object = lines.first(where: { !$0.hasPrefix("ref: ") && $0.hasSuffix(suffix) })
+    else {
+      throw GitWorkspaceError.remoteDefaultBranchUnavailable(directory)
+    }
+    let branch = String(ref.dropFirst(prefix.count).dropLast(suffix.count))
+    let commit = String(object.dropLast(suffix.count))
+    guard commit.count == 40 || commit.count == 64, commit.allSatisfy(\.isHexDigit) else {
+      throw GitWorkspaceError.remoteDefaultBranchUnavailable(directory)
+    }
+    _ = try runner.runData(["check-ref-format", "refs/heads/\(branch)"], in: directory)
+    return (branch, commit)
+  }
+
+  private func symbolicReference(
+    _ ref: String, in directory: URL, using runner: GitCommandRunner
+  ) throws -> String? {
+    do {
+      return try runner.run(["symbolic-ref", "--quiet", ref], in: directory)
+    } catch let error as GitCommandError where error.terminationStatus == 1 {
+      return nil
+    }
+  }
+
+  private func object(
+    at ref: String, in directory: URL, using runner: GitCommandRunner
+  ) throws -> String? {
+    do {
+      return try runner.run(["rev-parse", "--verify", "--quiet", ref], in: directory)
+    } catch let error as GitCommandError where error.terminationStatus == 1 {
+      return nil
+    }
+  }
+
   public func diskUsage(
     of snapshot: RepositorySnapshot,
     excludingWorktreePaths: Set<URL> = []
@@ -456,10 +550,22 @@ public struct GitWorkspace: Sendable {
     using runner: GitCommandRunner
   ) throws -> String? {
     do {
-      return try runner.run(
+      let targetRef = try runner.run(
+        ["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"],
+        in: repository.workingTreeURL
+      )
+      guard targetRef.hasPrefix("refs/remotes/origin/"),
+        targetRef != "refs/remotes/origin/HEAD"
+      else { return nil }
+      let target = try runner.run(
         ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"],
         in: repository.workingTreeURL
       )
+      _ = try runner.runData(
+        ["rev-parse", "--verify", "--quiet", "refs/remotes/origin/HEAD^{commit}"],
+        in: repository.workingTreeURL
+      )
+      return target
     } catch let error as GitCommandError where error.terminationStatus == 1 {
       return nil
     }
@@ -557,6 +663,10 @@ public enum GitWorkspaceError: Error, Equatable {
   case worktreeNotRegistered(URL)
   case worktreeNotCleanable(URL, CleanupRecommendation)
   case worktreeRegistrationNotPrunable(URL)
+  case remoteDefaultBranchUnavailable(URL)
+  case remoteDefaultBranchChanged(URL)
+  case invalidRemoteTrackingReference(String)
+  case remoteSynchronizationTimedOut(URL)
 }
 
 extension GitWorkspaceError: LocalizedError {
@@ -576,11 +686,28 @@ extension GitWorkspaceError: LocalizedError {
       CoreL10n.format("error.worktree_not_cleanable", url.path)
     case .worktreeRegistrationNotPrunable(let url):
       CoreL10n.format("error.worktree_registration_not_prunable", url.path)
+    case .remoteDefaultBranchUnavailable(let url):
+      CoreL10n.format("error.remote_default_branch_unavailable", url.path)
+    case .remoteDefaultBranchChanged(let url):
+      CoreL10n.format("error.remote_default_branch_changed", url.path)
+    case .invalidRemoteTrackingReference(let ref):
+      CoreL10n.format("error.invalid_remote_tracking_reference", ref)
+    case .remoteSynchronizationTimedOut(let url):
+      CoreL10n.format("error.remote_synchronization_timed_out", url.path)
     }
   }
 }
 
 private struct GitCommandRunner {
+  func runNetwork(_ arguments: [String], in directory: URL) async throws -> String {
+    let command = NetworkGitCommand(arguments: arguments, directory: directory)
+    return try await withTaskCancellationHandler {
+      try await Task.detached { try command.run() }.value
+    } onCancel: {
+      command.cancel()
+    }
+  }
+
   func run(_ arguments: [String], in directory: URL) throws -> String {
     let output = try runData(arguments, in: directory)
     return String(decoding: output, as: UTF8.self)
@@ -632,6 +759,94 @@ private struct GitCommandError: LocalizedError {
       terminationStatus,
       details
     )
+  }
+}
+
+private final class NetworkGitCommand: @unchecked Sendable {
+  private let arguments: [String]
+  private let directory: URL
+  private let process = Process()
+  private let lock = NSLock()
+  private var cancelled = false
+  private var timedOut = false
+
+  init(arguments: [String], directory: URL) {
+    self.arguments = arguments
+    self.directory = directory
+  }
+
+  func run() throws -> String {
+    let fileManager = FileManager.default
+    let temporaryDirectory = fileManager.temporaryDirectory.appending(path: UUID().uuidString)
+    try fileManager.createDirectory(
+      at: temporaryDirectory, withIntermediateDirectories: false,
+      attributes: [.posixPermissions: 0o700]
+    )
+    defer { try? fileManager.removeItem(at: temporaryDirectory) }
+    let outputURL = temporaryDirectory.appending(path: "stdout")
+    let errorURL = temporaryDirectory.appending(path: "stderr")
+    for url in [outputURL, errorURL] {
+      guard
+        fileManager.createFile(
+          atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600]
+        )
+      else { throw CocoaError(.fileWriteUnknown) }
+    }
+    let output = try FileHandle(forWritingTo: outputURL)
+    defer { try? output.close() }
+    let error = try FileHandle(forWritingTo: errorURL)
+    defer { try? error.close() }
+
+    process.executableURL = URL(filePath: "/usr/bin/git")
+    process.arguments = arguments
+    process.currentDirectoryURL = directory
+    process.standardInput = FileHandle.nullDevice
+    process.standardOutput = output
+    process.standardError = error
+    process.environment = ProcessInfo.processInfo.environment.merging([
+      "GIT_TERMINAL_PROMPT": "0",
+      "SSH_ASKPASS_REQUIRE": "never",
+    ]) { _, value in value }
+
+    try lock.withLock {
+      if cancelled { throw CancellationError() }
+      try process.run()
+    }
+    let timer = DispatchSource.makeTimerSource()
+    timer.schedule(deadline: .now() + .seconds(120))
+    timer.setEventHandler { [weak self] in self?.stop(timedOut: true) }
+    timer.resume()
+    defer { timer.cancel() }
+    process.waitUntilExit()
+
+    let state = lock.withLock { (cancelled: cancelled, timedOut: timedOut) }
+    if state.cancelled { throw CancellationError() }
+    if state.timedOut { throw GitWorkspaceError.remoteSynchronizationTimedOut(directory) }
+    guard process.terminationStatus == 0 else {
+      throw GitCommandError(
+        arguments: arguments,
+        directory: directory,
+        terminationStatus: process.terminationStatus,
+        standardError: String(decoding: try Data(contentsOf: errorURL), as: UTF8.self)
+      )
+    }
+    return String(decoding: try Data(contentsOf: outputURL), as: UTF8.self)
+  }
+
+  func cancel() {
+    stop(timedOut: false)
+  }
+
+  private func stop(timedOut: Bool) {
+    lock.withLock {
+      if timedOut {
+        guard process.isRunning else { return }
+        self.timedOut = true
+      } else {
+        cancelled = true
+      }
+      if process.isRunning { process.terminate() }
+    }
   }
 }
 
