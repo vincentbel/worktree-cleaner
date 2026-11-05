@@ -118,9 +118,15 @@ Unavailable commit objects produce an unknown date for the affected rows.
 Uncommitted edits do not change this timestamp. Targeted removal preflights
 do not request this display metadata.
 
-The preferred cleanup target is `refs/remotes/origin/HEAD`. If Git cannot resolve
-it, the product must ask for a project-specific target instead of guessing
-`main` or `master`.
+The cleanup target is `refs/remotes/origin/HEAD`. After opening or refreshing a
+project with linked worktrees, the app checks `origin` in the background. It
+fetches the remote's default branch only when its tracking reference is missing
+or outdated, then updates `origin/HEAD` if needed. It never guesses the branch
+name, fetches unrelated branches, or changes checked-out files. The local
+snapshot remains visible while synchronization runs, with cleanup disabled until
+it finishes. Switching projects cancels the previous synchronization. Errors
+are shown alongside the local snapshot; without a usable local target, worktrees
+remain ineligible for cleanup.
 
 ## Cleanup safety policy
 
@@ -192,8 +198,9 @@ This policy is intentionally conservative:
   change may remain "needs review" without hosting-provider data.
 - A clean worktree may still be in use by an agent. Git state alone cannot prove
   process inactivity, so removal always requires explicit confirmation.
-- Recommendations are based on local refs. Any future fetch action must be
-  explicit and must report authentication or network failures.
+- Recommendations are based on local refs. Background synchronization reports
+  authentication and network failures; an older local result is labeled when
+  synchronization fails.
 
 ## Disk usage
 

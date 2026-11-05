@@ -34,6 +34,8 @@ final class AppState {
   var diskUsageMeasuredAt: Date?
   var isLoadingSnapshot = false
   var isMeasuringDiskUsage = false
+  var synchronizingDefaultBranchRepositoryID: GitRepository.ID?
+  var defaultBranchSyncError: String?
   var removingWorktreeID: GitWorktree.ID?
   var batchRemovalProgress: BatchRemovalProgress?
   var batchRemovalResult: BatchRemovalResult?
@@ -74,6 +76,8 @@ final class AppState {
   private var rootScanErrors: [URL: String] = [:]
   private var activeRootScanIDs: [URL: UUID] = [:]
   private var activeSnapshotLoadID: UUID?
+  private var activeDefaultBranchSyncID: UUID?
+  private var defaultBranchSyncTask: Task<Void, Never>?
   private var diskUsageTask: Task<Void, Never>?
   private var transientMessageTask: Task<Void, Never>?
   private var snapshotsByRepositoryID: [GitRepository.ID: RepositorySnapshot] = [:]
@@ -163,6 +167,7 @@ final class AppState {
 
     persistWorkspaceRoots()
     selectedRootID = selectedURL
+    cancelDefaultBranchSync()
     activeSnapshotLoadID = nil
     diskUsageTask?.cancel()
     selectedRepositoryID = nil
@@ -377,7 +382,10 @@ final class AppState {
     await loadSelectedRepository()
   }
 
-  func loadSelectedRepository() async {
+  func loadSelectedRepository(synchronizeRemote: Bool = true) async {
+    if synchronizeRemote {
+      cancelDefaultBranchSync()
+    }
     guard
       let selectedRepositoryID,
       let repository = repositoryCatalog.repositories.first(where: {
@@ -421,6 +429,12 @@ final class AppState {
       if diskUsageCache[repository.id]?.isReusable(for: loadedSnapshot) != true {
         startMeasuringDiskUsage(for: loadedSnapshot, loadID: loadID)
       }
+      if synchronizeRemote, loadedSnapshot.repository.linkedWorktreeCount > 0 {
+        #if DEBUG
+          if demoDirectoryURL != nil { return }
+        #endif
+        startDefaultBranchSync(for: loadedSnapshot.repository)
+      }
     } catch {
       guard activeSnapshotLoadID == loadID else { return }
       errorMessage = error.localizedDescription
@@ -442,8 +456,51 @@ final class AppState {
     startMeasuringDiskUsage(for: snapshot, loadID: loadID)
   }
 
+  private func startDefaultBranchSync(for repository: GitRepository) {
+    let syncID = UUID()
+    activeDefaultBranchSyncID = syncID
+    synchronizingDefaultBranchRepositoryID = repository.id
+    defaultBranchSyncError = nil
+    defaultBranchSyncTask = Task {
+      var shouldReload = false
+      var failure: String?
+      do {
+        shouldReload = try await workspace.synchronizeDefaultBranch(of: repository)
+      } catch is CancellationError {
+        return
+      } catch {
+        shouldReload = true
+        failure = error.localizedDescription
+      }
+
+      guard activeDefaultBranchSyncID == syncID, selectedRepositoryID == repository.id else {
+        return
+      }
+      if shouldReload {
+        snapshotsByRepositoryID[repository.id] = nil
+        await loadSelectedRepository(synchronizeRemote: false)
+      }
+      guard activeDefaultBranchSyncID == syncID, selectedRepositoryID == repository.id else {
+        return
+      }
+      defaultBranchSyncError = failure
+      synchronizingDefaultBranchRepositoryID = nil
+      activeDefaultBranchSyncID = nil
+      defaultBranchSyncTask = nil
+    }
+  }
+
+  private func cancelDefaultBranchSync() {
+    defaultBranchSyncTask?.cancel()
+    defaultBranchSyncTask = nil
+    activeDefaultBranchSyncID = nil
+    synchronizingDefaultBranchRepositoryID = nil
+    defaultBranchSyncError = nil
+  }
+
   func remove(_ worktree: GitWorktree) async {
     guard let repository = snapshot?.repository,
+      synchronizingDefaultBranchRepositoryID != repository.id,
       removingWorktreeID == nil,
       batchRemovalProgress == nil
     else { return }
@@ -495,6 +552,7 @@ final class AppState {
 
   func removeAll(_ worktrees: [GitWorktree]) async {
     guard let currentSnapshot = snapshot,
+      synchronizingDefaultBranchRepositoryID != currentSnapshot.repository.id,
       removingWorktreeID == nil,
       batchRemovalProgress == nil
     else { return }
@@ -574,6 +632,7 @@ final class AppState {
 
   func prune(_ worktree: GitWorktree) async {
     guard let repository = snapshot?.repository,
+      synchronizingDefaultBranchRepositoryID != repository.id,
       removingWorktreeID == nil,
       batchRemovalProgress == nil
     else { return }

@@ -5,4 +5,8 @@
 "error.worktree_not_registered" = "该 worktree 已不在 Git 登记中：%@";
 "error.worktree_not_cleanable" = "该 worktree 已不再满足清理条件：%@";
 "error.worktree_registration_not_prunable" = "该 worktree 登记已不再满足清理条件：%@";
+"error.remote_default_branch_unavailable" = "origin 远端没有提供默认分支：%@";
+"error.remote_default_branch_changed" = "同步期间远端默认分支发生了变化：%@";
+"error.invalid_remote_tracking_reference" = "远端跟踪引用是符号引用，无法更新：%@";
+"error.remote_synchronization_timed_out" = "同步远端超时：%@";
 "error.git_command_failed" = "%@ 在 %@ 中执行失败，状态码 %d：%@";

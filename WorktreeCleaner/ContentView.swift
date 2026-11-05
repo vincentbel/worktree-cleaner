@@ -331,6 +331,10 @@ struct ContentView: View {
         diskUsageMeasuredAt: model.diskUsageMeasuredAt,
         isMeasuringDiskUsage: model.isMeasuringDiskUsage,
         isDiskUsageRefreshDisabled: model.isLoadingSnapshot || model.isMeasuringDiskUsage,
+        isLoadingSnapshot: model.isLoadingSnapshot,
+        isSynchronizingDefaultBranch: model.synchronizingDefaultBranchRepositoryID
+          == snapshot.repository.id,
+        defaultBranchSyncError: model.defaultBranchSyncError,
         removingWorktreeID: model.removingWorktreeID,
         batchRemovalProgress: model.batchRemovalProgress,
         onRecalculateDiskUsage: { model.recalculateDiskUsage() },
@@ -683,6 +687,9 @@ private struct WorktreeTable: View {
   let diskUsageMeasuredAt: Date?
   let isMeasuringDiskUsage: Bool
   let isDiskUsageRefreshDisabled: Bool
+  let isLoadingSnapshot: Bool
+  let isSynchronizingDefaultBranch: Bool
+  let defaultBranchSyncError: String?
   let removingWorktreeID: GitWorktree.ID?
   let batchRemovalProgress: BatchRemovalProgress?
   let onRecalculateDiskUsage: () -> Void
@@ -723,8 +730,7 @@ private struct WorktreeTable: View {
         .tint(.red)
         .disabled(
           selectedBatchRemovalWorktrees.isEmpty
-            || removingWorktreeID != nil
-            || batchRemovalProgress != nil
+            || isWorktreeActionDisabled
         )
         .help(L10n.string("action.batch_cleanup.help"))
 
@@ -785,6 +791,11 @@ private struct WorktreeTable: View {
 
       Divider()
 
+      DefaultBranchSyncStatus(
+        isSynchronizing: isSynchronizingDefaultBranch,
+        error: defaultBranchSyncError
+      )
+
       GeometryReader { geometry in
         ScrollView(.vertical) {
           HStack(alignment: .top, spacing: 0) {
@@ -794,7 +805,8 @@ private struct WorktreeTable: View {
                   selections: batchRemovalSelectableWorktrees.map {
                     headerSelection(for: $0)
                   },
-                  isSelectionDisabled: isRemovalInProgress || batchRemovalSelectableIDs.isEmpty,
+                  isSelectionDisabled: isWorktreeActionDisabled
+                    || batchRemovalSelectableIDs.isEmpty,
                   sortOrder: sortOrder,
                   isSortingDisabled: isRemovalInProgress,
                   onSort: { column in
@@ -809,7 +821,7 @@ private struct WorktreeTable: View {
                     allocatedBytes: worktreeAllocatedBytes[worktree.id],
                     isMeasuringDiskUsage: isMeasuringDiskUsage,
                     isSelectedForBatchRemoval: batchSelection(for: worktree),
-                    isBatchSelectionEnabled: isBatchRemovable(worktree) && !isRemovalInProgress
+                    isBatchSelectionEnabled: isBatchRemovable(worktree) && !isWorktreeActionDisabled
                   )
                   .background(rowBackground(at: index))
                   .overlay(alignment: .bottom) { Divider() }
@@ -840,7 +852,7 @@ private struct WorktreeTable: View {
                 WorktreeActionRow(
                   worktree: worktree,
                   isRemoving: removingWorktreeID == worktree.id,
-                  isRemovalInProgress: removingWorktreeID != nil || batchRemovalProgress != nil,
+                  isRemovalInProgress: isWorktreeActionDisabled,
                   onMessage: onMessage,
                   onError: onError,
                   onRemove: onRemove,
@@ -913,6 +925,10 @@ private struct WorktreeTable: View {
     removingWorktreeID != nil || batchRemovalProgress != nil
   }
 
+  private var isWorktreeActionDisabled: Bool {
+    isRemovalInProgress || isLoadingSnapshot || isSynchronizingDefaultBranch
+  }
+
   private func batchSelection(for worktree: GitWorktree) -> Binding<Bool> {
     Binding(
       get: { batchSelectionState.selectedIDs.contains(worktree.id) },
@@ -959,6 +975,47 @@ private struct WorktreeTable: View {
 
   private func rowBackground(at index: Int) -> Color {
     index.isMultiple(of: 2) ? Color.clear : Color.primary.opacity(0.035)
+  }
+}
+
+private struct DefaultBranchSyncStatus: View {
+  let isSynchronizing: Bool
+  let error: String?
+
+  @ViewBuilder
+  var body: some View {
+    if isSynchronizing {
+      HStack(spacing: 8) {
+        ProgressView()
+          .controlSize(.small)
+        Text(L10n.string("default_branch.syncing"))
+        Spacer()
+      }
+      .font(.callout)
+      .foregroundStyle(.secondary)
+      .padding(.horizontal)
+      .padding(.vertical, 8)
+      Divider()
+    } else if let error {
+      HStack(alignment: .top, spacing: 8) {
+        Image(systemName: "exclamationmark.triangle.fill")
+          .foregroundStyle(.orange)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(L10n.string("default_branch.sync_failed"))
+          Text(error)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(4)
+            .textSelection(.enabled)
+            .help(error)
+        }
+        Spacer()
+      }
+      .font(.callout)
+      .padding(.horizontal)
+      .padding(.vertical, 8)
+      Divider()
+    }
   }
 }
 
