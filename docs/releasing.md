@@ -173,12 +173,13 @@ scripts/build-release.sh 0.1.1 3
 
 The script archives and exports with Developer ID signing, then uses
 `scripts/package-dmg.sh` to package the app with an Applications shortcut. It
-signs the DMG with the app's Developer ID identity, submits the DMG (including
-the app inside) to Apple for notarization, staples the DMG ticket, and validates
-Gatekeeper acceptance for both the DMG and app. Sparkle signs the final stapled
-DMG and generates the signed appcast afterward. Delta updates are intentionally
-disabled so the release process does not need to retain previous application
-archives.
+signs the DMG with the app's Developer ID identity and independently verifies
+the image and its UDZO format before submitting it to Apple. The submission
+uses `notarytool --force` to tolerate local format-detection failures; Apple's
+notarization, ticket stapling, and Gatekeeper checks must still succeed. Sparkle
+signs the final stapled DMG and generates the signed appcast afterward. Delta
+updates are intentionally disabled so the release process does not need to
+retain previous application archives.
 
 To verify packaging locally without release credentials, run:
 

@@ -112,9 +112,19 @@ fi
 codesign --sign "$signing_identity" --timestamp \
   --identifier dev.worktreecleaner.app.dmg "$update_archive"
 codesign --verify --strict --verbose=2 "$update_archive"
+hdiutil verify "$update_archive"
+image_format="$(hdiutil imageinfo -plist "$update_archive" | plutil -extract Format raw -)"
+if [[ "$image_format" != "UDZO" ]]; then
+  echo "Expected a UDZO disk image, got: $image_format" >&2
+  exit 65
+fi
+
+# The independently verified image must still pass Apple's notarization,
+# stapling, and Gatekeeper checks before it can be published.
 xcrun notarytool submit \
   "$update_archive" \
   --keychain-profile "$notary_profile" \
+  --force \
   --wait
 xcrun stapler staple "$update_archive"
 xcrun stapler validate "$update_archive"
