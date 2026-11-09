@@ -74,7 +74,7 @@ public enum CleanupBlocker: Equatable, Sendable {
 
 public enum CleanupReviewReason: Equatable, Sendable {
   case cleanupTargetUnavailable
-  case notMerged(target: String)
+  case notMerged(target: String, preservingBranch: String)
   case detachedHeadNotMerged(target: String)
 }
 

@@ -176,7 +176,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
     )
     XCTAssertEqual(
       linkedWorktree.cleanupRecommendation,
-      .needsReview(reason: .notMerged(target: "origin/main"))
+      .needsReview(reason: .notMerged(target: "origin/main", preservingBranch: "agent-task"))
     )
 
     try await workspace.remove(
@@ -230,7 +230,7 @@ final class GitWorkspaceRemovalTests: XCTestCase {
       XCTAssertEqual(path, fixture.linkedWorktree.resolvingSymlinksInPath())
       XCTAssertEqual(
         recommendation,
-        .needsReview(reason: .notMerged(target: "origin/main"))
+        .needsReview(reason: .notMerged(target: "origin/main", preservingBranch: "agent-task"))
       )
     }
 

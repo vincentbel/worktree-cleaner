@@ -49,7 +49,7 @@
 "removal.unmerged.title" = "这个 Worktree 尚未合入主分支（%@）";
 "removal.unmerged.button" = "仍然清理";
 "removal.permanent.button" = "清理 Worktree";
-"removal.unmerged.message" = "清理只会删除 Worktree 目录。对应分支和已经提交的代码都会保留，之后可以随时切换到该分支查看。\n\n目录：%@";
+"removal.unmerged.message" = "清理只会删除 Worktree 目录。已提交代码保存在本地分支“%@”中，该分支会保留。\n\n目录：%@";
 "removal.confirm.message" = "清理只会删除 Worktree 目录，不会删除任何 Git 分支。代码已经保存在主分支中。\n\n目录：%@";
 "success.removed_branch" = "已清理 %@，分支 %@ 仍然保留。";
 "success.removed_detached" = "已清理 %@。原 Worktree 为 Detached HEAD。";
@@ -96,7 +96,7 @@
 "batch.confirm.breakdown.merged" = "已合入主分支";
 "batch.confirm.breakdown.merged.detail" = "代码已经保存在主分支中";
 "batch.confirm.breakdown.unmerged" = "尚未合入主分支";
-"batch.confirm.breakdown.unmerged.detail" = "对应分支和已提交代码都会保留";
+"batch.confirm.breakdown.unmerged.detail" = "保存这些提交的本地分支都会保留";
 "batch.confirm.breakdown.registrations" = "残留记录";
 "batch.confirm.breakdown.registrations.detail" = "仅清理选中的记录，分支和现存文件都会保留";
 "batch.selected_count" = "已选择 %d 个";
@@ -127,8 +127,8 @@
 "recommendation.cleanup_target_unavailable" = "暂时不能清理";
 "recommendation.cleanup_target_unavailable.detail" = "没有找到主分支，无法判断代码是否已经合入";
 "recommendation.not_merged" = "尚未合入主分支（%@）";
-"recommendation.not_merged.detail" = "可以清理；对应分支和已提交代码都会保留";
-"recommendation.detached_not_merged" = "未合入主分支（%@），并且没有对应分支";
+"recommendation.not_merged.detail" = "可以清理；提交保存在本地分支 %@";
+"recommendation.detached_not_merged" = "未合入主分支（%@），也没有本地分支保存提交";
 "recommendation.detached_not_merged.detail" = "请先创建分支，否则清理后提交可能难以找回";
 "recommendation.cleanable" = "已合入主分支（%@），可以清理";
 "recommendation.cleanable.detail" = "代码已经保存在主分支中";

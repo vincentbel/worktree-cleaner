@@ -359,7 +359,7 @@ struct ContentView: View {
   private var removalTitle: String {
     guard let pendingRemoval else { return L10n.string("removal.confirm.title") }
     switch pendingRemoval.cleanupRecommendation.removalKind {
-    case .unmerged(let target):
+    case .unmerged(let target, _):
       return L10n.format("removal.unmerged.title", target)
     default:
       return L10n.string("removal.confirm.title")
@@ -377,8 +377,8 @@ struct ContentView: View {
 
   private func removalMessage(for worktree: GitWorktree) -> String {
     switch worktree.cleanupRecommendation.removalKind {
-    case .unmerged:
-      return L10n.format("removal.unmerged.message", worktree.path.path)
+    case .unmerged(_, let preservingBranch):
+      return L10n.format("removal.unmerged.message", preservingBranch, worktree.path.path)
     default:
       return L10n.format("removal.confirm.message", worktree.path.path)
     }
@@ -1498,10 +1498,10 @@ private struct RecommendationLabel: View {
         systemImage: "questionmark.circle.fill",
         tint: .orange
       )
-    case .notMerged(let target):
+    case .notMerged(let target, let preservingBranch):
       RecommendationPresentation(
         title: L10n.format("recommendation.not_merged", target),
-        detail: L10n.string("recommendation.not_merged.detail"),
+        detail: L10n.format("recommendation.not_merged.detail", preservingBranch),
         systemImage: "exclamationmark.triangle.fill",
         tint: .orange
       )
@@ -1533,7 +1533,7 @@ private func formattedBytes(_ bytes: Int64) -> String {
 
 private enum WorktreeRemovalKind {
   case merged(target: String)
-  case unmerged(target: String)
+  case unmerged(target: String, preservingBranch: String)
 }
 
 extension CleanupRecommendation {
@@ -1541,8 +1541,8 @@ extension CleanupRecommendation {
     switch self {
     case .cleanable(let target):
       .merged(target: target)
-    case .needsReview(reason: .notMerged(let target)):
-      .unmerged(target: target)
+    case .needsReview(reason: .notMerged(let target, let preservingBranch)):
+      .unmerged(target: target, preservingBranch: preservingBranch)
     default:
       nil
     }

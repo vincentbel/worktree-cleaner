@@ -66,8 +66,10 @@ work protected.
 - **State is rechecked immediately before removal.**
 - **Worktrees are never force-removed, and branches are never deleted.**
 - **Main, dirty, and locked worktrees are blocked.**
-- A clean unmerged worktree can be removed when its branch keeps the commits
-  reachable. An unmerged detached HEAD is blocked until you create a branch.
+- A clean unmerged worktree can be removed when a local branch keeps its commits
+  reachable, including a detached HEAD. The app shows the preserving branch and
+  rechecks it before removal. Without a preserving local branch, an unmerged
+  detached HEAD is blocked until you create one.
 
 ## Install
 

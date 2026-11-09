@@ -49,7 +49,7 @@
 "removal.unmerged.title" = "This Worktree Has Not Been Merged into the Main Branch (%@)";
 "removal.unmerged.button" = "Clean Up Anyway";
 "removal.permanent.button" = "Clean Up Worktree";
-"removal.unmerged.message" = "Cleanup only removes the Worktree directory. The corresponding branch and all committed code will remain, so you can switch back to that branch at any time.\n\nDirectory: %@";
+"removal.unmerged.message" = "Cleanup only removes the Worktree directory. Committed code is preserved by the local branch “%@”, which will be kept.\n\nDirectory: %@";
 "removal.confirm.message" = "Cleanup only removes the Worktree directory. It does not delete any Git branches, and the code is already available from the main branch.\n\nDirectory: %@";
 "success.removed_branch" = "Cleaned up %@. Branch %@ was kept.";
 "success.removed_detached" = "Cleaned up %@. The Worktree had a detached HEAD.";
@@ -79,7 +79,7 @@
 "action.delete" = "Clean Up";
 "action.batch_cleanup" = "Clean Up Selected…";
 "action.batch_cleanup.help" = "Clean up selected worktree directories or leftover records without deleting Git branches";
-"action.delete.unmerged_help" = "Clean up this Worktree that has not been merged into the main branch; its branch and committed code will be kept";
+"action.delete.unmerged_help" = "Clean up this Worktree that has not been merged into the main branch; the local branch preserving its commits will be kept";
 "action.delete.help" = "Clean up this Worktree directory without deleting Git branches";
 "action.prune_registration" = "Clean Up Leftover Record";
 "action.prune_registration.help" = "Clean up invalid Git Worktree records without deleting branches or existing files";
@@ -96,7 +96,7 @@
 "batch.confirm.breakdown.merged" = "Merged into the main branch";
 "batch.confirm.breakdown.merged.detail" = "The code is already available from the main branch";
 "batch.confirm.breakdown.unmerged" = "Not merged into the main branch";
-"batch.confirm.breakdown.unmerged.detail" = "The corresponding branches and committed code will be kept";
+"batch.confirm.breakdown.unmerged.detail" = "Local branches preserving these commits will be kept";
 "batch.confirm.breakdown.registrations" = "Leftover records";
 "batch.confirm.breakdown.registrations.detail" = "Only the selected records are removed; branches and existing files are kept";
 "batch.selected_count" = "%d selected";
@@ -127,8 +127,8 @@
 "recommendation.cleanup_target_unavailable" = "Cannot clean up yet";
 "recommendation.cleanup_target_unavailable.detail" = "The main branch was not found, so the app cannot tell whether the code was merged";
 "recommendation.not_merged" = "Not merged into the main branch (%@)";
-"recommendation.not_merged.detail" = "Can be cleaned up; the branch and committed code will be kept";
-"recommendation.detached_not_merged" = "Not merged into the main branch (%@), with no branch pointing to it";
+"recommendation.not_merged.detail" = "Can be cleaned up; commits are preserved by local branch %@";
+"recommendation.detached_not_merged" = "Not merged into the main branch (%@), with no local branch preserving its commits";
 "recommendation.detached_not_merged.detail" = "Create a branch first, or these commits may be difficult to recover after cleanup";
 "recommendation.cleanable" = "Merged into the main branch (%@); safe to clean up";
 "recommendation.cleanable.detail" = "The code is already available from the main branch";
