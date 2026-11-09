@@ -99,6 +99,7 @@ Machine-readable Git output is the source of truth:
 - `git status --porcelain=v2 --branch -z`
 - `git rev-parse`
 - `git merge-base --is-ancestor`
+- `git for-each-ref --contains=<HEAD> refs/heads/`
 
 A worktree snapshot can contain its path, HEAD, branch or detached state, main
 worktree flag, lock/prunable state, tracked and untracked changes, conflicts,
@@ -145,9 +146,14 @@ A user may also explicitly remove a clean linked worktree whose HEAD is not an
 ancestor of the cleanup target. This remains a "needs review" result rather than
 becoming a cleanup recommendation. The UI must name the target branch, use a
 stronger destructive warning, and explain that the worktree directory cannot be
-restored automatically. The final preflight still rejects main, missing, locked,
-or dirty worktrees. An unavailable cleanup target is not enough evidence to
-offer this override.
+restored automatically. A local branch must preserve the commits. For a detached
+HEAD, inspection checks whether any local branch contains that commit, including
+when the branch has advanced beyond it. The recommendation and single-removal
+confirmation name one preserving branch, selected in refname order. Remote
+tracking refs and tags alone do not qualify for this override. The final preflight
+repeats the local-branch containment check and still rejects main, missing,
+locked, or dirty worktrees. An unavailable cleanup target is not enough evidence
+to offer this override.
 
 Removal uses `git worktree remove <absolute-path>` without `--force`. The first
 version never deletes the associated branch as a side effect. Batch cleanup
@@ -169,8 +175,9 @@ files.
 Batch removal selects worktrees currently classified as `cleanable` and unlocked
 missing linked worktree registrations by default.
 Clean worktrees classified as `notMerged` can also be selected explicitly when
-a branch keeps their commits reachable. An unmerged detached HEAD receives its
-own non-removable recommendation until the user creates a branch. Other blocked
+a local branch keeps their commits reachable, including detached worktrees.
+An unmerged detached HEAD without a preserving local branch receives its own
+non-removable recommendation until the user creates a branch. Other blocked
 worktrees, the main worktree, and existing worktrees with unavailable cleanup
 targets cannot be selected for the batch. The main table keeps status,
 measured size, recommendation, and path visible while the user makes the

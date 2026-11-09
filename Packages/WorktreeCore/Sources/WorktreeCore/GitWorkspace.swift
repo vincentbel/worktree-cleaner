@@ -496,7 +496,7 @@ public struct GitWorkspace: Sendable {
                 cleanupRecommendation: try cleanupRecommendation(
                   head: head,
                   isMain: isMain,
-                  isDetached: isDetached,
+                  branch: branch,
                   isLocked: isLocked,
                   lockReason: lockReason,
                   isPrunable: isPrunable,
@@ -574,7 +574,7 @@ public struct GitWorkspace: Sendable {
   private func cleanupRecommendation(
     head: String,
     isMain: Bool,
-    isDetached: Bool,
+    branch: String?,
     isLocked: Bool,
     lockReason: String?,
     isPrunable: Bool,
@@ -612,10 +612,22 @@ public struct GitWorkspace: Sendable {
       )
       return .cleanable(target: target)
     } catch let error as GitCommandError where error.terminationStatus == 1 {
-      if isDetached {
+      let preservingBranch: String
+      if let branch {
+        preservingBranch = branch
+      } else {
+        preservingBranch = try GitCommandRunner().run(
+          [
+            "for-each-ref", "--contains=\(head)", "--format=%(refname:lstrip=2)",
+            "--sort=refname", "--count=1", "refs/heads/",
+          ],
+          in: repository.workingTreeURL
+        )
+      }
+      if preservingBranch.isEmpty {
         return .needsReview(reason: .detachedHeadNotMerged(target: target))
       }
-      return .needsReview(reason: .notMerged(target: target))
+      return .needsReview(reason: .notMerged(target: target, preservingBranch: preservingBranch))
     }
   }
 
