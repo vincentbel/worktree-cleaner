@@ -73,6 +73,21 @@ struct WorktreeSortOrder: Equatable {
 struct WorktreeBatchSelection {
   var selectedIDs: Set<GitWorktree.ID> = []
   private(set) var anchorID: GitWorktree.ID?
+  private var defaultIDs: Set<GitWorktree.ID> = []
+  private var manuallyChangedIDs: Set<GitWorktree.ID> = []
+
+  mutating func reset(defaultIDs: Set<GitWorktree.ID>) {
+    self.defaultIDs = defaultIDs
+    selectedIDs = defaultIDs
+    manuallyChangedIDs = []
+    resetAnchor()
+  }
+
+  mutating func updateDefaults(_ currentIDs: Set<GitWorktree.ID>) {
+    selectedIDs.subtract(defaultIDs.subtracting(currentIDs).subtracting(manuallyChangedIDs))
+    selectedIDs.formUnion(currentIDs.subtracting(defaultIDs).subtracting(manuallyChangedIDs))
+    defaultIDs = currentIDs
+  }
 
   mutating func set(
     _ id: GitWorktree.ID,
@@ -88,6 +103,7 @@ struct WorktreeBatchSelection {
       affectedIDs = [id]
       anchorID = id
     }
+    manuallyChangedIDs.formUnion(affectedIDs)
     if selected {
       selectedIDs.formUnion(affectedIDs)
     } else {
@@ -96,6 +112,7 @@ struct WorktreeBatchSelection {
   }
 
   mutating func setAll(_ selected: Bool, selectableIDs: Set<GitWorktree.ID>) {
+    manuallyChangedIDs.formUnion(selectableIDs)
     if selected {
       selectedIDs.formUnion(selectableIDs)
     } else {
@@ -106,6 +123,7 @@ struct WorktreeBatchSelection {
 
   mutating func retain(_ selectableIDs: Set<GitWorktree.ID>) {
     selectedIDs.formIntersection(selectableIDs)
+    manuallyChangedIDs.formIntersection(selectableIDs)
     if let anchorID, !selectableIDs.contains(anchorID) { resetAnchor() }
   }
 

@@ -131,6 +131,32 @@ remain ineligible for cleanup.
 
 ## Cleanup safety policy
 
+Saved agent projects affect automatic batch selection. `WorktreeCore.AgentProjectCatalog`
+reads Codex's current versioned state database through the system SQLite3 library
+with a read-only connection. It reads Claude Desktop's account-scoped
+`local-agent-mode-sessions/<organization>/<account>/spaces.json` files for explicit
+Code folder bindings (`ccdFolderPath`). A saved project folder matches a worktree
+when it is the worktree root or lies inside it, after resolving symbolic links.
+
+Project reads run separately from Git inspection, in a background actor, when a
+repository is opened or refreshed. File size, modification time, and identity
+cache unchanged sources; the Codex database's WAL is included in that check.
+Read failures are logged and preserve the last successful source snapshot.
+Without a successful initial read, automatic batch selection waits for a
+successful refresh. Missing source files are an ordinary empty project list.
+
+Associated rows show the application's official icon with a hover popover naming
+the project, its folder, and the reason it is not selected by default. The native
+icon view clips to its 16-point bounds so mouse tracking covers only the visible
+icon. Installed application icons are loaded once. Bundled fallbacks come from
+Codex's supplied `icon-codex-light.png` and Claude Desktop's supplied `electron.icns`
+artwork.
+Individual selection, Shift selection, Select All, and single-row cleanup
+remain available under the existing Git eligibility checks. Explicit selection
+and deselection survive refreshes; a newly associated worktree loses only its
+automatic selection. Directory-removal confirmation explains when selected
+project folders will become unavailable.
+
 The UI uses the phrase "cleanable based on local Git checks" rather than
 claiming absolute safety. A high-confidence cleanup recommendation requires all
 of the following:
@@ -173,7 +199,8 @@ registration in that repository. It never deletes branches or existing worktree
 files.
 
 Batch removal selects worktrees currently classified as `cleanable` and unlocked
-missing linked worktree registrations by default.
+missing linked worktree registrations by default, except those associated with
+saved agent projects.
 Clean worktrees classified as `notMerged` can also be selected explicitly when
 a local branch keeps their commits reachable, including detached worktrees.
 An unmerged detached HEAD without a preserving local branch receives its own

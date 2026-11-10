@@ -75,6 +75,10 @@
 "column.path" = "Path";
 "column.actions" = "Actions";
 "worktree.main" = "Main worktree";
+"project.association.label" = "Included in a %@ project";
+"project.association.binding" = "Project: %@\nProject folder: %@";
+"project.association.help" = "This worktree contains a folder saved in a %@ project.\n\n%@\n\nIt is not selected by default to avoid accidental cleanup. You can still select it manually or use Select All, then clean it up if the Git checks pass. A saved project association does not indicate whether the folder is currently in use.";
+"removal.project.message" = "This worktree is included in a saved project. After cleanup, the project's folder will no longer be available.";
 
 "action.delete" = "Clean Up";
 "action.batch_cleanup" = "Clean Up Selected…";
@@ -92,6 +96,7 @@
 "action.recalculate_disk_usage" = "Recalculate Disk Usage";
 
 "batch.confirm.subtitle" = "Cleanup removes selected worktree directories or leftover records. Existing worktrees are checked for uncommitted changes before removal. Git branches are kept.";
+"batch.confirm.projects" = "The selection includes %d worktrees saved in projects. After directory cleanup, those project folders will no longer be available.";
 "batch.confirm.breakdown.title" = "Selected Worktrees";
 "batch.confirm.breakdown.merged" = "Merged into the main branch";
 "batch.confirm.breakdown.merged.detail" = "The code is already available from the main branch";
@@ -101,7 +106,7 @@
 "batch.confirm.breakdown.registrations.detail" = "Only the selected records are removed; branches and existing files are kept";
 "batch.selected_count" = "%d selected";
 "batch.select_all.label" = "Select All Removable Worktrees";
-"batch.select_all.help" = "Select or deselect all cleanable worktrees and leftover records, including unmerged worktrees";
+"batch.select_all.help" = "Select or deselect all cleanable worktrees and leftover records, including unmerged worktrees and worktrees saved in projects";
 "batch.select_worktree.label" = "Select %@ for batch cleanup";
 "batch.progress" = "Cleaning %d of %d…";
 "batch.result.partial_title" = "Cleanup Partially Completed";
