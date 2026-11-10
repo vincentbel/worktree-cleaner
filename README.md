@@ -12,7 +12,7 @@ See what is safe to remove, reclaim disk space, and keep branches and uncommitte
 work protected.
 
 <p align="center">
-  <strong><a href="https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.3/WorktreeCleaner-0.1.3.dmg">Download Worktree Cleaner 0.1.3</a></strong>
+  <strong><a href="https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.4/WorktreeCleaner-0.1.4.dmg">Download Worktree Cleaner 0.1.4</a></strong>
 </p>
 
 <p align="center">
@@ -73,7 +73,7 @@ work protected.
 
 ## Install
 
-Download the signed and notarized [Worktree Cleaner 0.1.3 DMG][download].
+Download the signed and notarized [Worktree Cleaner 0.1.4 DMG][download].
 Open it, drag `WorktreeCleaner.app` onto the **Applications** shortcut, then
 launch the app from Applications and eject the disk image.
 
@@ -105,4 +105,4 @@ explicitly confirm cleanup.
 - [Release process](docs/releasing.md)
 - [Edit and export the introduction images](docs/marketing/intro-en/README.md)
 
-[download]: https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.3/WorktreeCleaner-0.1.3.dmg
+[download]: https://github.com/vincentbel/worktree-cleaner/releases/download/v0.1.4/WorktreeCleaner-0.1.4.dmg
