@@ -54,8 +54,8 @@ work protected.
       </a>
     </td>
     <td width="50%">
-      <a href="docs/images/intro-en/06-sort-select.png">
-        <img src="docs/images/intro-en/06-sort-select.png" width="100%" alt="Sort worktrees by commit time, disk usage, branch, or path, and Shift-click to select a range">
+      <a href="docs/images/intro-en/06-agent-projects.png">
+        <img src="docs/images/intro-en/06-agent-projects.png" width="100%" alt="Worktrees linked to Codex or Claude Code projects show application icons and stay unchecked by default; they can still be selected manually for cleanup">
       </a>
     </td>
   </tr>
