@@ -28,7 +28,14 @@ final class AppState {
   var workspaceRoots = WorkspaceRoots()
   var selectedRootID: URL?
   var selectedRepositoryID: GitRepository.ID?
-  var snapshot: RepositorySnapshot?
+  var snapshot: RepositorySnapshot? {
+    didSet {
+      agentProjectAssociations =
+        snapshot.map { agentProjectSnapshot.associations(for: $0) } ?? [:]
+    }
+  }
+  var agentProjectAssociations: [URL: [AgentProject]] = [:]
+  var canAutomaticallySelectWorktrees: Bool { agentProjectSnapshot.canAutomaticallySelect }
   var worktreeAllocatedBytes: [URL: Int64] = [:]
   var sharedGitAllocatedBytes: Int64?
   var diskUsageMeasuredAt: Date?
@@ -64,6 +71,9 @@ final class AppState {
   }
 
   private let workspace: GitWorkspace
+  private let agentProjectCatalog = AgentProjectCatalog()
+  private var agentProjectSnapshot = AgentProjectSnapshot(
+    projects: [], canAutomaticallySelect: false)
   private let defaults: UserDefaults
   private let cacheStore: WorkspaceCacheStore
   #if DEBUG
@@ -417,12 +427,15 @@ final class AppState {
     }
 
     do {
+      async let projects = agentProjectCatalog.snapshot()
       let loadedSnapshot = try await workspace.snapshot(of: repository)
+      let loadedProjects = await projects
       guard activeSnapshotLoadID == loadID,
         selectedRepositoryID == repository.id
       else { return }
       updateRepository(loadedSnapshot.repository)
       snapshotsByRepositoryID[repository.id] = loadedSnapshot
+      agentProjectSnapshot = loadedProjects
       snapshot = loadedSnapshot
       applyCachedDiskUsage(for: repository.id)
       persistWorkspaceCache()

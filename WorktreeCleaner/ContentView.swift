@@ -326,6 +326,8 @@ struct ContentView: View {
     {
       WorktreeTable(
         snapshot: snapshot,
+        agentProjectAssociations: model.agentProjectAssociations,
+        canAutomaticallySelectWorktrees: model.canAutomaticallySelectWorktrees,
         worktreeAllocatedBytes: model.worktreeAllocatedBytes,
         sharedGitAllocatedBytes: model.sharedGitAllocatedBytes,
         diskUsageMeasuredAt: model.diskUsageMeasuredAt,
@@ -342,7 +344,12 @@ struct ContentView: View {
         onError: { model.errorMessage = $0 },
         onRemove: { pendingRemoval = $0 },
         onBatchRemove: { worktrees in
-          pendingBatchRemoval = BatchRemovalRequest(worktrees: worktrees)
+          pendingBatchRemoval = BatchRemovalRequest(
+            worktrees: worktrees,
+            projectWorktreeCount: worktrees.count {
+              !$0.canCleanUpRegistration
+                && model.agentProjectAssociations[$0.id]?.isEmpty == false
+            })
         },
         onPrune: { pendingPrune = $0 }
       )
@@ -376,12 +383,15 @@ struct ContentView: View {
   }
 
   private func removalMessage(for worktree: GitWorktree) -> String {
+    let message: String
     switch worktree.cleanupRecommendation.removalKind {
     case .unmerged(_, let preservingBranch):
-      return L10n.format("removal.unmerged.message", preservingBranch, worktree.path.path)
+      message = L10n.format("removal.unmerged.message", preservingBranch, worktree.path.path)
     default:
-      return L10n.format("removal.confirm.message", worktree.path.path)
+      message = L10n.format("removal.confirm.message", worktree.path.path)
     }
+    guard model.agentProjectAssociations[worktree.id]?.isEmpty == false else { return message }
+    return message + "\n\n" + L10n.string("removal.project.message")
   }
 
 }
@@ -389,6 +399,7 @@ struct ContentView: View {
 private struct BatchRemovalRequest: Identifiable {
   let id = UUID()
   let worktrees: [GitWorktree]
+  let projectWorktreeCount: Int
 
   var unmergedCount: Int {
     worktrees.count { worktree in
@@ -501,6 +512,12 @@ private struct BatchRemovalConfirmationSheet: View {
       }
 
       selectionBreakdown
+
+      if request.projectWorktreeCount > 0 {
+        Text(L10n.format("batch.confirm.projects", request.projectWorktreeCount))
+          .font(.callout)
+          .foregroundStyle(.secondary)
+      }
 
       Divider()
 
@@ -682,6 +699,8 @@ private struct RepositoryMetricLabel: View {
 
 private struct WorktreeTable: View {
   let snapshot: RepositorySnapshot
+  let agentProjectAssociations: [URL: [AgentProject]]
+  let canAutomaticallySelectWorktrees: Bool
   let worktreeAllocatedBytes: [URL: Int64]
   let sharedGitAllocatedBytes: Int64?
   let diskUsageMeasuredAt: Date?
@@ -818,6 +837,7 @@ private struct WorktreeTable: View {
                   index, worktree in
                   WorktreeGridRow(
                     worktree: worktree,
+                    agentProjects: agentProjectAssociations[worktree.id] ?? [],
                     allocatedBytes: worktreeAllocatedBytes[worktree.id],
                     isMeasuringDiskUsage: isMeasuringDiskUsage,
                     isSelectedForBatchRemoval: batchSelection(for: worktree),
@@ -871,19 +891,16 @@ private struct WorktreeTable: View {
     }
     .navigationTitle(snapshot.repository.name)
     .onAppear {
-      batchSelectionState.selectedIDs = defaultBatchRemovalIDs
-      batchSelectionState.resetAnchor()
+      batchSelectionState.reset(defaultIDs: defaultBatchRemovalIDs)
     }
     .onChange(of: snapshot.repository.id) {
-      batchSelectionState.selectedIDs = defaultBatchRemovalIDs
-      batchSelectionState.resetAnchor()
+      batchSelectionState.reset(defaultIDs: defaultBatchRemovalIDs)
     }
     .onChange(of: batchRemovalSelectableIDs) { _, currentIDs in
       batchSelectionState.retain(currentIDs)
     }
-    .onChange(of: defaultBatchRemovalIDs) { previousIDs, currentIDs in
-      batchSelectionState.selectedIDs.subtract(previousIDs.subtracting(currentIDs))
-      batchSelectionState.selectedIDs.formUnion(currentIDs.subtracting(previousIDs))
+    .onChange(of: defaultBatchRemovalIDs) { _, currentIDs in
+      batchSelectionState.updateDefaults(currentIDs)
     }
   }
 
@@ -892,7 +909,10 @@ private struct WorktreeTable: View {
   }
 
   private var defaultBatchRemovalWorktrees: [GitWorktree] {
-    snapshot.worktrees.filter(isCleanable)
+    guard canAutomaticallySelectWorktrees else { return [] }
+    return snapshot.worktrees.filter {
+      isCleanable($0) && agentProjectAssociations[$0.id]?.isEmpty != false
+    }
   }
 
   private var defaultBatchRemovalIDs: Set<GitWorktree.ID> {
@@ -1103,6 +1123,7 @@ private struct WorktreeGridHeader: View {
 
 private struct WorktreeGridRow: View {
   let worktree: GitWorktree
+  let agentProjects: [AgentProject]
   let allocatedBytes: Int64?
   let isMeasuringDiskUsage: Bool
   @Binding var isSelectedForBatchRemoval: Bool
@@ -1124,9 +1145,17 @@ private struct WorktreeGridRow: View {
       }
       GridCell(width: WorktreeGridMetrics.worktreeWidth) {
         VStack(alignment: .leading, spacing: 3) {
-          Text(worktree.branch ?? "Detached HEAD")
-            .fontWeight(.medium)
-            .lineLimit(1)
+          HStack(spacing: 5) {
+            Text(worktree.branch ?? "Detached HEAD")
+              .fontWeight(.medium)
+              .lineLimit(1)
+            ForEach(AgentApplication.allCases, id: \.self) { application in
+              let projects = agentProjects.filter { $0.application == application }
+              if !projects.isEmpty {
+                AgentProjectIcon(application: application, projects: projects)
+              }
+            }
+          }
           if worktree.isMain {
             Text(L10n.string("worktree.main"))
               .font(.caption)
