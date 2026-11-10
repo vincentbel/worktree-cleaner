@@ -854,7 +854,7 @@
         "screenshotSecondary": "/screenshots/worktree-cleaner-en/captures/06-batch-confirmation.jpg"
       },
       {
-        "id": "06-sort-select",
+        "id": "06-agent-projects",
         "layout": "split-landscape",
         "label": {
           "en": ""
@@ -862,7 +862,7 @@
         "headline": {
           "en": ""
         },
-        "screenshot": "/screenshots/worktree-cleaner-en/captures/07-sort-select.jpg",
+        "screenshot": "/screenshots/worktree-cleaner-en/captures/07-agent-projects.jpg",
         "backgroundColor": "#F6F7FA",
         "textElements": [
           {
@@ -885,7 +885,7 @@
           {
             "id": "index",
             "text": {
-              "en": "06  /  SORT & SELECT"
+              "en": "06  /  AGENT PROJECTS"
             },
             "transform": {
               "x": 1980,
@@ -902,7 +902,7 @@
           {
             "id": "headline-line1",
             "text": {
-              "en": "Sort and select"
+              "en": "Recognize"
             },
             "transform": {
               "x": 120,
@@ -911,7 +911,7 @@
               "height": 260,
               "zIndex": 6
             },
-            "fontSize": 120,
+            "fontSize": 128,
             "fontWeight": 600,
             "color": "#192A43",
             "align": "left"
@@ -919,16 +919,16 @@
           {
             "id": "headline-line2",
             "text": {
-              "en": "worktrees"
+              "en": "agent projects"
             },
             "transform": {
               "x": 120,
               "y": 443,
-              "width": 890,
+              "width": 930,
               "height": 270,
               "zIndex": 6
             },
-            "fontSize": 168,
+            "fontSize": 124,
             "fontWeight": 600,
             "color": "#155CCD",
             "align": "left"
@@ -936,13 +936,13 @@
           {
             "id": "subtitle",
             "text": {
-              "en": "Sort the list, then Shift-click\nto select a range."
+              "en": "Worktrees linked to Codex or\nClaude Code projects stay\nunchecked by default."
             },
             "transform": {
               "x": 128,
               "y": 735,
-              "width": 790,
-              "height": 180,
+              "width": 850,
+              "height": 230,
               "zIndex": 6
             },
             "fontSize": 44,
@@ -954,7 +954,7 @@
         "imageElements": [
           {
             "id": "composition",
-            "src": "/screenshots/worktree-cleaner-en/06-sort-select.svg",
+            "src": "/screenshots/worktree-cleaner-en/06-agent-projects.svg",
             "transform": {
               "x": 0,
               "y": 0,

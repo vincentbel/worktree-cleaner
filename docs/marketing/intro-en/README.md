@@ -51,18 +51,23 @@ only the generated repositories, keeping personal workspace data out of images.
    worktree and uncommitted work remain unselected.
 6. Open the batch cleanup confirmation and save the sheet as
    `06-batch-confirmation.jpg`. Cancel after capturing it.
-7. For `07-sort-select.jpg`, use a disposable repository with six merged linked
-   worktrees: `agent/docs`, `agent/layout`, `agent/preview`, `agent/release`,
-   `agent/search`, and `agent/theme`. Leave an uncommitted edit in `agent/layout`
-   and lock `agent/release`. Hide the sidebar, sort **Branch** in ascending order,
-   and clear the selection. Click the `agent/docs` checkbox, then Shift-click
-   `agent/theme`. Capture the resulting four selected worktrees; the dirty and
-   locked rows remain unselected. This screenshot illustrates range selection
-   alongside the four supported sort columns.
+7. For `07-agent-projects.jpg`, use a disposable repository with four clean,
+   merged linked worktrees: `agent/docs`, `agent/preview`, `agent/search`, and
+   `agent/theme`. In a disposable Debug copy, point `AgentProjectCatalog` at
+   synthetic project records through its `codexDirectory` and
+   `claudeSessionsDirectory` arguments. The Codex SQLite fixture contains an
+   `Aurora Preview` project rooted at `agent/preview`; the Claude Code
+   `spaces.json` fixture contains an `Aurora Search` project whose
+   `ccdFolderPath` points to `agent/search`. Keep personal project data out of
+   the capture. Hide the sidebar and leave the default selection intact:
+   `agent/docs` and `agent/theme` are checked, while the two associated
+   worktrees show application icons and remain unchecked. Capture the native
+   window content at 2200 x 1440 pixels. The composition enlarges the linked
+   rows and marks the two unchecked boxes without changing their state.
 
 Save the JPEGs under `captures/`. The first five window captures use approximately
 2912 x 1898 pixels, the confirmation sheet uses 1080 x 694 pixels, and the
-sort-and-select capture uses 2200 x 1440 pixels. When window
+agent-project capture uses 2200 x 1440 pixels. When window
 geometry or table columns change, update the crop rectangles in `compose.py`.
 Update displayed example measurements if the fresh app reports different values.
 

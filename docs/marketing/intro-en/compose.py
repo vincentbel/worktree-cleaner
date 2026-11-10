@@ -16,10 +16,10 @@ ROOT = HERE.parents[2]
 OUTPUT = ROOT / 'docs/images/intro-en'
 ASSET_PATH = 'screenshots/worktree-cleaner-en'
 NAMES = ['01-repositories', '02-locations', '03-disk-usage',
-         '04-cleanup-decision', '05-batch-cleanup', '06-sort-select']
+         '04-cleanup-decision', '05-batch-cleanup', '06-agent-projects']
 CAPTURES = ['01-repositories.jpg', '02-locations.jpg', '03-disk-usage.jpg',
             '04-cleanup-decision.jpg', '05-batch-selected.jpg',
-            '06-batch-confirmation.jpg', '07-sort-select.jpg']
+            '06-batch-confirmation.jpg', '07-agent-projects.jpg']
 
 
 def jpeg_size(data):
@@ -214,28 +214,28 @@ def batch_cleanup(selected, confirmation):
     return '\n'.join(p)
 
 
-def sort_select(image):
-    p = [start('<clipPath id="screen"><rect x="1174" y="443" width="1502" height="1116" rx="18"/></clipPath>'),
+def agent_projects(image):
+    p = [start('<clipPath id="screen"><rect x="1174" y="541" width="1502" height="809" rx="18"/></clipPath>'),
          rect(1092, 238, 1636, 1438, 48, 'url(#stage)', '#E0E7F1'),
-         text(1170, 321, 'SHIFT-CLICK TO SELECT A RANGE', 34, '#235CB1', 600),
-         text(162, 1000, 'Sort by', 36, '#344B6C', 600)]
-    for i, label in enumerate(['Last Commit', 'Disk Usage', 'Branch', 'Path']):
-        x, y = 150+(i % 2)*360, 1040+(i // 2)*140
-        p += [rect(x, y, 340, 108, 20, '#FBFCFE'),
-              text(x+28, y+66, label, 34, '#42536E'),
-              f'<path d="M{x+303} {y+31}V{y+74}M{x+293} {y+41}L{x+303} {y+31}L{x+313} {y+41}M{x+293} {y+64}L{x+303} {y+74}L{x+313} {y+64}" fill="none" stroke="#8AA2C5" stroke-width="2.5"/>']
-    p += [text(162, 1390, 'Select a range', 36, '#344B6C', 600),
-          rect(150, 1420, 220, 110, 20, '#FBFCFE'),
-          text(260, 1491, 'Shift', 48, '#235CB1', 600, 'middle'),
-          text(412, 1492, '+', 46, '#8499B6', anchor='middle'),
-          rect(455, 1420, 300, 110, 20, '#FBFCFE'),
-          text(605, 1491, 'click', 48, '#235CB1', 600, 'middle'),
-          window(1150, 352, 1550, 1260, 'aurora-editor'), '<g clip-path="url(#screen)">',
-          pixels(image, 1174, 443, 1502, 113.3, '0 103 1100 83'),
-          pixels(image, 1174, 556.3, 1502, 84.7, '0 185 1100 62'),
-          pixels(image, 1174, 641, 1502, 917.6, '0 358 1100 672'), '</g>',
-          '<path d="M1140 719H1120V1483H1140" fill="none" stroke="#5F8DD2" stroke-width="3"/>',
-          text(2670, 1652, 'Worktrees with uncommitted changes or locks are skipped.', 30, anchor='end'), '</svg>']
+         text(1170, 321, 'CODEX & CLAUDE CODE PROJECTS', 34, '#235CB1', 600),
+         text(162, 1050, 'Works with', 36, '#344B6C', 600)]
+    for i, (name, asset) in enumerate([('Codex', 'CodexProject'),
+                                      ('Claude Code', 'ClaudeCodeProject')]):
+        y = 1090+i*195
+        data = (ROOT / 'WorktreeCleaner/Assets.xcassets' / f'{asset}.imageset/icon.png').read_bytes()
+        uri = 'data:image/png;base64,' + base64.b64encode(data).decode()
+        p += [rect(150, y, 700, 155, 20, '#FBFCFE'),
+              f'<image href="{uri}" x="190" y="{y+35}" width="84" height="84"/>',
+              text(314, y+96, name, 48, '#34445C', 600)]
+    p += [text(162, 1575, 'Select manually to clean up.', 34),
+          window(1150, 450, 1550, 1000, 'aurora-editor'), '<g clip-path="url(#screen)">',
+          pixels(image, 1174, 541, 1502, 113.3, '0 103 1100 83'),
+          pixels(image, 1174, 654.3, 1502, 84.7, '0 185 1100 62'),
+          pixels(image, 1174, 739, 1502, 611.7, '0 358 1100 448'), '</g>',
+          '<path d="M1200 967H1120V1568H1180M1120 1120H1200" fill="none" stroke="#5F8DD2" stroke-width="3"/>',
+          '<circle cx="1220" cy="967" r="27" fill="none" stroke="#5F8DD2" stroke-width="3"/>',
+          '<circle cx="1220" cy="1120" r="27" fill="none" stroke="#5F8DD2" stroke-width="3"/>',
+          text(1200, 1582, 'Not selected by default', 40, '#235CB1', 600), '</svg>']
     return '\n'.join(p)
 
 
@@ -249,7 +249,7 @@ def prepare(editor):
     images = [capture(name) for name in CAPTURES]
     diagrams = [repositories(images[0]), locations(images[1]), disk_usage(images[2]),
                 cleanup_decision(images[3]), batch_cleanup(images[4], images[5]),
-                sort_select(images[6])]
+                agent_projects(images[6])]
     for name, diagram in zip(NAMES, diagrams):
         ET.fromstring(diagram)
         (destination / f'{name}.svg').write_text(diagram+'\n')
